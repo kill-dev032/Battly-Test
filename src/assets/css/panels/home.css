@@ -17,7 +17,7 @@
 }
 
 .modal-card-body::-webkit-scrollbar {
-  width: var(--scroll-size, 10px);
+  width: var(--scroll-size, 15px);
 }
 
 .modal-card-body::-webkit-scrollbar-thumb {

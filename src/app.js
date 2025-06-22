@@ -16,7 +16,6 @@ const { autoUpdater } = require("electron-updater");
 const { io } = require("socket.io-client");
 const socket = io("https://api.battlylauncher.com");
 //process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0";
-const fetch = require("node-fetch");
 const fs = require("fs");
 const path = require("path");
 const dataDirectory =
@@ -387,33 +386,7 @@ if (!gotTheLock) {
   app.quit();
 } else {
   app.whenReady().then(() => {
-    if (fs.existsSync(path.join(dataDirectory, ".battly/launchboost"))) {
-      fetch("https://api.battlylauncher.com/v2/launcher/config-launcher/config.json").then(async res => {
-        let data = await res.json();
-        let version = data.latestVersion;
-        let actualVersion = (require("../package.json")).version;
-
-        if (actualVersion != version) {
-          const updateWindow = UpdateWindow.createWindow();
-        } else {
-          MainWindow.createWindow();
-        }
-      }).catch(async (error) => {
-        let file = await fs.readFileSync(path.join(dataDirectory, "/.battly/battly/launcher/config-launcher/config.json"), "utf8");
-        let data = JSON.parse(file);
-        console.log(data)
-        let version = data.latestVersion;
-        let actualVersion = (require("../package.json")).version;
-
-        if (actualVersion != version) {
-          const updateWindow = UpdateWindow.createWindow();
-        } else {
-          MainWindow.createWindow();
-        }
-      });
-    } else {
-      UpdateWindow.createWindow();
-    }
+    UpdateWindow.createWindow();
   });
 }
 
@@ -636,7 +609,7 @@ ipcMain.handle("update-app", () => {
 
 const pkgVersion = async () => {
   const pkg = {
-    version: "2.4.2",
+    version: "2.0.2",
     buildVersion: 1004
   };
   return pkg;
@@ -646,7 +619,7 @@ ipcMain.handle("update-new-app", async () => {
   console.log(await pkgVersion());
 
   return new Promise(async (resolve, reject) => {
-    fetch("https://api.battlylauncher.com/v2/launcher/config-launcher/config.json").then(async res => {
+    fetch("https://api.battlylauncher.com/launcher/config-launcher/config.json").then(async res => {
       let data = await res.json();
       let version = data.battly.release;
 
@@ -661,7 +634,6 @@ ipcMain.handle("update-new-app", async () => {
       }
     }).catch((error) => {
       console.log(error);
-
       resolve({
         error: true,
         message: error,

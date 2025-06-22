@@ -13,17 +13,18 @@ const Launcher = new Launch();
 import { consoleOutput } from "./logger.js";
 let consoleOutput_ = + consoleOutput;
 import { logger, database, changePanel } from "../utils.js";
+import { Lang } from "./lang.js";
 import { CrashReport } from "./crash-report.js";
 const got = require("got");
 const dataDirectory = process.env.APPDATA || (process.platform == "darwin" ? `${process.env.HOME}/Library/Application Support` : process.env.HOME);
 const ShowCrashReport = new CrashReport().ShowCrashReport;
-const { Lang } = require("./assets/js/utils/lang.js");
 let langs;
-new Lang().GetLang().then(lang_ => {
-  langs = lang_;
-}).catch(error => {
-  console.error("Error:", error);
-});
+
+async function LoadLang() {
+  langs = await new Lang().GetLang();
+}
+
+LoadLang();
 
 class LoadMinecraft {
   async LaunchMinecraft(options) {
@@ -485,7 +486,11 @@ class LoadMinecraft {
       console.error(err);
       consoleOutput_ += `[ERROR] ${JSON.stringify(err, null, 2)}\n`;
 
-      logTextArea1.innerHTML += `\n❌ ${err}`;
+      modalDiv1.remove();
+
+      return ShowCrashReport(
+        `${langs.error_detected_one} \nError:\n${JSON.stringify(err, null, 2)}`
+      );
     });
   }
 

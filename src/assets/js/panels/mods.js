@@ -16,7 +16,6 @@ const path = require('path');
 const unzipper = require('unzipper');
 const toml = require('toml');
 const { shell } = require('electron');
-const marked = require('marked');
 
 const Swal = require('./assets/js/libs/sweetalert/sweetalert2.all.min.js');
 const preloadContent = document.querySelector('.preload-content');
@@ -32,16 +31,8 @@ const Toast = Swal.mixin({
         toast.addEventListener('mouseleave', Swal.resumeTimer)
     }
 })
-
-const { Lang } = require("./assets/js/utils/lang.js");
 let lang;
-new Lang().GetLang().then(lang_ => {
-    lang = lang_;
-}).catch(error => {
-    console.error("Error:", error);
-});
-
-
+import { Lang } from "../utils/lang.js";
 import { Alert } from "../utils/alert.js";
 
 class Mods {
@@ -122,19 +113,10 @@ class Mods {
             bodyText.innerHTML = lang.welcome_mods;
 
             const lineBreak = document.createElement('br');
-
-            const statusText = document.createElement('p');
-            statusText.innerHTML = `<i class="fa-solid fa-spinner fa-spin-pulse"></i> ${lang.loading_mods}`;
-
             const lineBreak2 = document.createElement('br');
-
-            const modalMods = document.createElement('div');
-            modalMods.style.display = 'none';
 
             modalBody.appendChild(bodyText);
             modalBody.appendChild(lineBreak);
-            modalBody.appendChild(statusText);
-            modalBody.appendChild(modalMods);
 
             modal.appendChild(modalBackground);
             modal.appendChild(modalCard);
@@ -183,24 +165,10 @@ class Mods {
                                 if (tomlData.mods && Array.isArray(tomlData.mods) && tomlData.mods.length > 0) {
                                     const modInfo = tomlData.mods[0];
 
-                                    const modIconEntry = zip.files.find(entry => entry.path.toLowerCase() === `assets/${modInfo.modId}/icon.png`);
-                                    let modIconBase64 = '';
-
-                                    if (modIconEntry) {
-                                        const modIconBuffer = await modIconEntry.buffer();
-
-                                        const base64Icon = modIconBuffer.toString('base64');
-
-                                        const mimeType = 'image/png'
-                                        modIconBase64 = `data:${mimeType};base64,${base64Icon}`;
-
-                                    }
-
                                     let modObject = {
                                         name: modInfo.displayName || '',
                                         version: modInfo.version || '',
                                         description: modInfo.description || '',
-                                        image: modIconBase64 || 'https://battlylauncher.com/assets/img/mc-icon.png',
                                     };
 
                                     modsArray.push(modObject);
@@ -217,8 +185,9 @@ class Mods {
 
                                     card1.innerHTML = `
    <header class="card-header is-flex">
-   <img src="${modObject.image}" style="width: 30px; height: 30px; margin-left: 15px; align-self: center; border-radius: 5px;">
-      <p class="card-header-title" style="color: #fff;padding-left: 10px;">${modObject.name}</p>
+      <p class="card-header-title" style="
+         color: #fff;
+         ">${modObject.name}</p>
       <div class="buttons buttons-no-margin" style="margin-right: 10px;">
       ${mods[i].endsWith('.disabledmod') ? '<i class="fa-solid fa-eye"></i>' : '<i class="fa-solid fa-eye-slash"></i>'}
                     <i class="fa-solid fa-folder-open"></i>
@@ -233,7 +202,7 @@ class Mods {
                                     `;
 
 
-                                    modalMods.appendChild(card1);
+                                    modalBody.appendChild(card1);
 
                                     const openButton = card1.querySelector('.buttons-no-margin').children[3];
                                     const deleteButton = card1.querySelector('.buttons-no-margin').children[2];
@@ -250,8 +219,6 @@ class Mods {
                                             deactivateButton.classList.remove('fa-eye');
                                             deactivateButton.classList.add('fa-eye-slash');
 
-                                            mods[i] = enabledModPath;
-
                                             new Alert().ShowAlert({
                                                 icon: 'success',
                                                 title: lang.mod_activated,
@@ -263,8 +230,6 @@ class Mods {
 
                                             deactivateButton.classList.remove('fa-eye-slash');
                                             deactivateButton.classList.add('fa-eye');
-
-                                            mods[i] = disabledModPath;
 
                                             new Alert().ShowAlert({
                                                 icon: 'success',
@@ -286,8 +251,11 @@ class Mods {
                                     });
 
                                     playButton.addEventListener('click', () => {
+                                        console.log('Abriendo la carpeta del mod...');
                                         try {
+                                            console.log('Abriendo la carpeta del mod...');
                                             let modPath = mods[i].replace(/\//g, '\\');
+                                            console.log(modPath);
                                             shell.showItemInFolder(`${modPath}`);
                                         } catch (error) {
                                             console.error('Error al abrir el gestor de archivos:', error);
@@ -308,7 +276,7 @@ class Mods {
                                         }).then((result) => {
                                             if (result.isConfirmed) {
                                                 card1.remove();
-
+                                                lineBreak3.remove();
                                                 fs.unlinkSync(mods[i]);
                                                 new Alert().ShowAlert({
                                                     icon: 'success',
@@ -335,28 +303,15 @@ class Mods {
                             const manifestString = manifestContent.toString('utf8');
                             const manifest = JSON.parse(manifestString);
 
-                            const modIconEntry = zip.files.find(entry => entry.path.toLowerCase() === manifest.icon?.toLowerCase());
-                            let modIconBase64 = '';
-
-                            if (modIconEntry) {
-                                const modIconBuffer = await modIconEntry.buffer();
-
-                                const base64Icon = modIconBuffer.toString('base64');
-
-                                const mimeType = 'image/png'
-                                modIconBase64 = `data:${mimeType};base64,${base64Icon}`;
-
-                            }
-
                             let modObject = {
                                 name: manifest.name || '',
                                 version: manifest.version || '',
                                 description: manifest.description || '',
-                                image: modIconBase64 || 'https://battlylauncher.com/assets/img/mc-icon.png',
                             };
 
                             modsArray.push(modObject);
 
+                            // Crear el header de la primera tarjeta
 
                             const card1 = document.createElement('div');
                             card1.classList.add('card');
@@ -367,8 +322,9 @@ class Mods {
 
                             card1.innerHTML = `
    <header class="card-header is-flex">
-   <img src="${modObject.image}" style="width: 30px; height: 30px; margin-left: 15px; align-self: center; border-radius: 5px;">
-      <p class="card-header-title" style="color: #fff;padding-left: 10px;">${modObject.name}</p>
+      <p class="card-header-title" style="
+         color: #fff;
+         ">${modObject.name}</p>
       <div class="buttons buttons-no-margin" style="margin-right: 10px;">
       ${mods[i].endsWith('.disabledmod') ? '<i class="fa-solid fa-eye"></i>' : '<i class="fa-solid fa-eye-slash"></i>'}
                     <i class="fa-solid fa-folder-open"></i>
@@ -383,7 +339,7 @@ class Mods {
                                     `;
 
 
-                            modalMods.appendChild(card1);
+                            modalBody.appendChild(card1);
 
                             const openButton = card1.querySelector('.buttons-no-margin').children[3];
                             const deleteButton = card1.querySelector('.buttons-no-margin').children[2];
@@ -400,8 +356,6 @@ class Mods {
                                     deactivateButton.classList.remove('fa-eye');
                                     deactivateButton.classList.add('fa-eye-slash');
 
-                                    mods[i] = enabledModPath;
-
                                     new Alert().ShowAlert({
                                         icon: 'success',
                                         title: lang.mod_activated,
@@ -413,8 +367,6 @@ class Mods {
 
                                     deactivateButton.classList.remove('fa-eye-slash');
                                     deactivateButton.classList.add('fa-eye');
-
-                                    mods[i] = disabledModPath;
 
                                     new Alert().ShowAlert({
                                         icon: 'success',
@@ -436,8 +388,11 @@ class Mods {
                             });
 
                             playButton.addEventListener('click', () => {
+                                console.log('Abriendo la carpeta del mod...');
                                 try {
+                                    console.log('Abriendo la carpeta del mod...');
                                     let modPath = mods[i].replace(/\//g, '\\');
+                                    console.log(modPath);
                                     shell.showItemInFolder(`${modPath}`);
                                 } catch (error) {
                                     console.error('Error al abrir el gestor de archivos:', error);
@@ -457,7 +412,7 @@ class Mods {
                                 }).then((result) => {
                                     if (result.isConfirmed) {
                                         card1.remove();
-
+                                        lineBreak3.remove();
                                         fs.unlinkSync(mods[i]);
                                         new Alert().ShowAlert({
                                             icon: 'success',
@@ -476,24 +431,10 @@ class Mods {
                             const manifestString = manifestContent.toString('utf8');
                             const manifest = JSON.parse(manifestString);
 
-                            const modIconEntry = zip.files.find(entry => entry.path.toLowerCase() === manifest.icon?.toLowerCase());
-                            let modIconBase64 = '';
-
-                            if (modIconEntry) {
-                                const modIconBuffer = await modIconEntry.buffer();
-
-                                const base64Icon = modIconBuffer.toString('base64');
-
-                                const mimeType = 'image/png'
-                                modIconBase64 = `data:${mimeType};base64,${base64Icon}`;
-
-                            }
-
                             let modObject = {
-                                name: manifest.name || '',
-                                version: manifest.version || '',
-                                description: manifest.description || '',
-                                image: modIconBase64 || 'https://battlylauncher.com/assets/img/mc-icon.png',
+                                name: manifest.quilt_loader.metadata.name || '',
+                                version: manifest.quilt_loader.version || '',
+                                description: manifest.quilt_loader.metadata.description || '',
                             };
 
                             modsArray.push(modObject);
@@ -508,8 +449,9 @@ class Mods {
 
                             card1.innerHTML = `
    <header class="card-header is-flex">
-    <img src="${modObject.image}" style="width: 30px; height: 30px; margin-left: 15px; align-self: center; border-radius: 5px;">
-      <p class="card-header-title" style="color: #fff;padding-left: 10px;">${modObject.name}</p>
+      <p class="card-header-title" style="
+         color: #fff;
+         ">${modObject.name}</p>
       <div class="buttons buttons-no-margin" style="margin-right: 10px;">
       ${mods[i].endsWith('.disabledmod') ? '<i class="fa-solid fa-eye"></i>' : '<i class="fa-solid fa-eye-slash"></i>'}
                     <i class="fa-solid fa-folder-open"></i>
@@ -524,7 +466,7 @@ class Mods {
                                     `;
 
 
-                            modalMods.appendChild(card1);
+                            modalBody.appendChild(card1);
 
                             const openButton = card1.querySelector('.buttons-no-margin').children[3];
                             const deleteButton = card1.querySelector('.buttons-no-margin').children[2];
@@ -541,8 +483,6 @@ class Mods {
                                     deactivateButton.classList.remove('fa-eye');
                                     deactivateButton.classList.add('fa-eye-slash');
 
-                                    mods[i] = enabledModPath;
-
                                     new Alert().ShowAlert({
                                         icon: 'success',
                                         title: lang.mod_activated,
@@ -554,8 +494,6 @@ class Mods {
 
                                     deactivateButton.classList.remove('fa-eye-slash');
                                     deactivateButton.classList.add('fa-eye');
-
-                                    mods[i] = disabledModPath;
 
                                     new Alert().ShowAlert({
                                         icon: 'success',
@@ -577,9 +515,11 @@ class Mods {
                             });
 
                             playButton.addEventListener('click', () => {
+                                console.log('Abriendo la carpeta del mod...');
                                 try {
                                     console.log('Abriendo la carpeta del mod...');
                                     let modPath = mods[i].replace(/\//g, '\\');
+                                    console.log(modPath);
                                     shell.showItemInFolder(`${modPath}`);
                                 } catch (error) {
                                     console.error('Error al abrir el gestor de archivos:', error);
@@ -599,7 +539,7 @@ class Mods {
                                 }).then((result) => {
                                     if (result.isConfirmed) {
                                         card1.remove();
-
+                                        lineBreak3.remove();
                                         fs.unlinkSync(mods[i]);
                                         new Alert().ShowAlert({
                                             icon: 'success',
@@ -622,9 +562,6 @@ class Mods {
                     document.body.appendChild(modal);
 
                 }
-
-                modalBody.removeChild(statusText);
-                modalMods.style.display = 'block';
             }
         });
     }
@@ -802,9 +739,8 @@ class Mods {
                     */
 
                     const textP2 = document.createElement("p");
-                    textP2.innerHTML = `<i class="fa-solid fa-spinner fa-spin-pulse" style="margin-right: 5px;"></i> ${lang.installing_modpack_can_take}`;
+                    textP2.innerHTML = `<span><i class="fa-solid fa-spinner fa-spin-pulse"></i> ${lang.installing_modpack_can_take}</span>`;
                     textP2.style.color = "#fff";
-                    textP2.style.wordBreak = "break-all";
                     bodySection2.appendChild(textP2);
 
                     const progress = document.createElement("progress");
@@ -920,7 +856,7 @@ class Mods {
                                         totalFilesDownloaded++;
                                         progress.value = totalFilesDownloaded;
 
-                                        textP2.innerHTML = `<span><i class="fa-solid fa-spinner fa-spin-pulse"></i> ${lang.installing_modpack_can_take}</span><br><br>${lang.installing_file} ${path} (${totalFilesDownloaded} / ${totalFiles})`;
+                                        textP2.innerHTML = `<i class="fa-solid fa-spinner fa-spin-pulse"></i>${lang.installing_modpack_can_take}<br><br>${lang.installing_file} ${path} (${totalFilesDownloaded} / ${totalFiles})`;
                                         textP2.style.color = "#fff";
                                         if (totalFilesDownloaded == totalFiles) {
                                             modalDiv.remove();
@@ -942,65 +878,40 @@ class Mods {
                         }
                     }
 
+                    async function descargarMod(projectID, fileID, destino, manifestPath) {
+                        const url = `https://api.curseforge.com/v1/mods/${projectID}/files/${fileID}/download-url`;
+                        const modData = `https://api.curseforge.com/v1/mods/${projectID}`
+                        const axios = require('axios');
+                        const responseDatos = await axios.get(modData, {
+                            headers: {
+                                'x-api-key': apiKey,
+                            },
+                        });
 
-                    const fs_ = require('fs').promises;
+                        try {
+                            const response = await fetch(url, {
+                                headers: {
+                                    'X-Api-Key': apiKey,
+                                },
+                            });
 
-                    async function descargarMod(projectID, fileID, destino) {
-                        const url = `https://www.curseforge.com/api/v1/mods/${projectID}/files/${fileID}/download`;
-                        const modData = `https://www.curseforge.com/api/v1/mods/${projectID}/files/${fileID}`;
+                            if (response.ok) {
+                                const {
+                                    data
+                                } = await response.json();
+                                const response2 = await fetch(data);
 
-                        let intentos = 0;
-                        let exito = false;
-
-                        while (intentos < 3 && !exito) {
-                            try {
-                                intentos++;
-
-                                // Solicitar datos del mod
-                                const responseDatos = await fetch(modData, {
-                                    headers: { 'x-api-key': apiKey },
-                                });
-
-                                if (!responseDatos.ok) {
-                                    throw new Error(`Error al obtener datos del mod: ${responseDatos.status}`);
-                                }
-
-                                const modInfo = await responseDatos.json();
-                                const nombreArchivo = modInfo.data.fileName; // Usar el nombre exacto del archivo
-
-
-                                // Descargar el archivo redirigido
-                                const response = await fetch(url, {
-                                    redirect: 'follow', // Sigue redirecciones (302)
-                                });
-
-                                if (!response.ok) {
-                                    throw new Error(`Error al descargar el archivo: ${response.status}`);
-                                }
-
-                                const rutaArchivo = path.join(destino, nombreArchivo);
-                                const fileStream = fs.createWriteStream(rutaArchivo);
-
-                                // Descargar el archivo como un stream
-                                await new Promise((resolve, reject) => {
-                                    response.body.pipe(fileStream);
-                                    response.body.on('error', reject);
-                                    fileStream.on('finish', resolve);
-                                });
-
-                                exito = true; // Salir del bucle si la descarga es exitosa
-                            } catch (error) {
-                                console.error(`Error al intentar descargar el mod (Intento ${intentos}/3):`, error.message || error);
-                                if (intentos === 3) {
-                                    console.error(`Descarga fallida después de 3 intentos para el mod ${projectID}-${fileID}.`);
-                                }
-                            }
+                                if (response2.ok) {
+                                    const archivoDescargado = await response2.buffer();
+                                    // Guarda el archivo en la carpeta 'destino'
+                                    await fs.writeFile(path.join(destino, `${responseDatos.data.data.name.replace(/[\/\\:*?"<>|]/g, "_")}.jar`), archivoDescargado);
+                                } else { }
+                            } else { }
+                        } catch (error) {
+                            console.error(`Error al descargar el mod ${projectID}-${fileID}:`);
+                            console.error(error);
                         }
                     }
-
-
-
-
 
                     let destinationFile = file.path;
 
@@ -1013,185 +924,179 @@ class Mods {
                     let json;
 
                     if (tipoArchivo === 'zip') {
-                        const randomString = Math.random().toString(36).substring(2, 8);
-                        const instancesFolder = `${dataDirectory}/.battly/instances`;
-                        const instanceFolder = `${instancesFolder}/${randomString}`;
-                        const tempFolder = `${dataDirectory}/.battly/temp`;
-                        const destinationFolder = instanceFolder;
-                        const modsFolder = `${destinationFolder}/mods`;
+                        let randomString = Math.random().toString(36).substring(2, 8);
+                        if (!fs.existsSync(`${dataDirectory}/.battly/instances`)) {
+                            fs.mkdirSync(`${dataDirectory}/.battly/instances`);
+                        }
 
-                        try {
-                            // Crear carpetas necesarias
-                            await fs.promises.mkdir(instancesFolder, { recursive: true });
-                            await fs.promises.mkdir(tempFolder, { recursive: true });
-                            await fs.promises.mkdir(instanceFolder, { recursive: true });
-                            await fs.promises.mkdir(modsFolder, { recursive: true });
+                        //comprobar si existe la carpeta de la instancia
+                        if (!fs.existsSync(`${dataDirectory}/.battly/instances/${randomString}`)) {
+                            fs.mkdirSync(`${dataDirectory}/.battly/instances/${randomString}`);
+                        } else {
+                            //generar otro string random
+                            randomString = Math.random().toString(36).substring(2, 8);
+                            //crear la carpeta de la instancia
+                            fs.mkdirSync(`${dataDirectory}/.battly/instances/${randomString}`);
+                        }
+                        const destinationFolder = `${dataDirectory}/.battly/instances/${randomString}`;
 
-                            // Crear un proceso hijo para la extracción
-                            const { fork } = require('child_process');
-                            const extractProcess = fork(path.join(__dirname, '/assets/js/utils/extractChild.js'), [
-                                JSON.stringify({
-                                    destinationFile,
-                                    destinationFolder,
-                                }),
-                            ]);
 
-                            // Esperar a que la extracción se complete
-                            await new Promise((resolve, reject) => {
-                                extractProcess.on('message', (message) => {
-                                    if (message.type === 'progress') {
-                                        // Actualizar la interfaz de usuario con el archivo que se está extrayendo
-                                        textP2.innerHTML = `Extrayendo: ${message.fileName}`;
-                                    } else if (message.type === 'done') {
-                                        // Verificar si existe el archivo manifest.json después de la extracción
-                                        if (!fs.existsSync(path.join(destinationFolder, 'manifest.json'))) {
-                                            new Alert().ShowAlert({
-                                                icon: 'error',
-                                                title: lang.the_modpack_is_not_compatible,
-                                                text: lang.the_modpack_is_not_compatible_text,
-                                            });
 
-                                            fs.rmSync(destinationFolder, { recursive: true, force: true });
-                                            modalDiv.remove();
-                                            return;
-                                        }
 
-                                        // Leer el archivo manifest.json
-                                        fs.promises.readFile(path.join(destinationFolder, 'manifest.json'), 'utf8')
-                                            .then((json) => {
-                                                realizarSiguientePaso(json);
-                                            })
-                                            .catch((err) => {
-                                                console.error('Error al leer el archivo manifest.json:', err);
-                                            });
-                                    }
-                                });
+                        if (!fs.existsSync(destinationFolder)) {
+                            fs.mkdirSync(destinationFolder);
+                        }
 
-                                extractProcess.on('exit', (code) => {
-                                    if (code !== 0) {
-                                        reject(new Error('El proceso de extracción finalizó con errores.'));
-                                    }
-                                });
+                        if (!fs.existsSync(dataDirectory + '/.battly/temp')) {
+                            fs.mkdirSync(dataDirectory + '/.battly/temp');
+                        }
 
-                                extractProcess.on('error', (error) => {
-                                    reject(error);
-                                });
-                            });
+                        if (!fs.existsSync(destinationFolder + '/mods')) {
+                            fs.mkdirSync(destinationFolder + '/mods');
+                        }
 
-                            async function realizarSiguientePaso(manifestData) {
+                        const destinoMods = destinationFolder + '/mods';
 
-                                // Verificar si el archivo manifest.json está presente
-                                const manifestPath = path.join(destinationFolder, 'manifest.json');
-                                if (!fs.existsSync(manifestPath)) {
-                                    new Alert().ShowAlert({
-                                        icon: 'error',
-                                        title: lang.the_modpack_is_not_compatible,
-                                        text: lang.the_modpack_is_not_compatible_text,
+                        const zip = new AdmZip(destinationFile);
+                        zip.extractAllTo(destinationFolder, true);
+
+                        if (!fs.existsSync(path.join(destinationFolder, 'manifest.json'))) {
+                            new Alert().ShowAlert({
+                                icon: 'error',
+                                title: lang.the_modpack_is_not_compatible,
+                                text: lang.the_modpack_is_not_compatible_text
+                            })
+
+                            fs.removeSync(destinationFolder);
+                            modalDiv.remove();
+                            return;
+                        }
+                        json = await fs.readFile(path.join(destinationFolder, 'manifest.json'), 'utf8');
+                        console.log(json);
+
+                        if (json === undefined || json === null || json === '') {
+                            new Alert().ShowAlert({
+                                icon: 'error',
+                                title: lang.the_modpack_is_not_compatible,
+                                text: lang.the_modpack_is_not_compatible_text
+                            })
+                        }
+
+                        setTimeout(async () => {
+
+
+                            const manifestPath = `${destinationFolder}/manifest.json`;
+                            async function leerManifest() {
+                                try {
+                                    const manifestData = await fs.readFile(manifestPath, 'utf8');
+                                    const manifest = JSON.parse(manifestData);
+                                    return manifest;
+                                } catch (error) {
+                                    throw error;
+                                }
+                            }
+
+                            const manifest = await leerManifest(path.join(destinationFolder, 'manifest.json'));
+
+                            let total = manifest.files.length;
+                            let restante = total;
+                            let totalFilesDownloaded = 0;
+
+                            let name = manifest.name;
+                            let description = manifest.author ? manifest.author : "Sin descripción";
+                            let version = manifest.minecraft.version;
+                            let loader;
+                            let loaderVersion;
+                            let loader_ = manifest.minecraft.modLoaders[0].id;
+
+                            if (loader_.startsWith("fabric")) {
+                                loader = "fabric";
+                                loaderVersion = loader_.replace("fabric-", "");
+                            } else if (loader_.startsWith("forge")) {
+                                loader = "forge";
+                                loaderVersion = loader_.replace("forge-", "");
+                            } else {
+                                loader = "quilt";
+                                loaderVersion = loader_.replace("quilt-", "");
+                            }
+
+
+
+                            if (name && description && version && loader && loaderVersion) {
+
+
+
+                                //descargar la imagen https://bulma.io/images/placeholders/128x128.png y moverla a la carpeta de la instancia
+                                fetch("https://battlylauncher.com/assets/img/mc-icon.png")
+                                    .then((res) => res.buffer())
+                                    .then((buffer) => {
+                                        fs.writeFileSync(
+                                            `${dataDirectory}/.battly/instances/${randomString}/icon.png`,
+                                            buffer
+                                        );
                                     });
-                                    await fs.promises.rm(destinationFolder, { recursive: true, force: true });
-                                    modalDiv.remove();
-                                    return;
-                                }
 
-                                const manifest = JSON.parse(manifestData);
 
-                                let total = manifest.files.length;
-                                let restante = total;
-                                let totalFilesDownloaded = 0;
-
-                                let name = manifest.name;
-                                let description = manifest.author ? manifest.author : 'Sin descripción';
-                                let version = manifest.minecraft.version;
-                                let loader;
-                                let loaderVersion;
-                                let loader_ = manifest.minecraft.modLoaders[0].id;
-
-                                if (loader_.startsWith('fabric')) {
-                                    loader = 'fabric';
-                                    loaderVersion = loader_.replace('fabric-', '');
-                                } else if (loader_.startsWith('forge')) {
-                                    loader = 'forge';
-                                    loaderVersion = loader_.replace('forge-', '');
-                                } else {
-                                    loader = 'quilt';
-                                    loaderVersion = loader_.replace('quilt-', '');
-                                }
-
-                                // Descargar y mover la imagen del ícono
-                                const response = await fetch('https://battlylauncher.com/assets/img/mc-icon.png');
-                                const buffer = await response.buffer();
-                                await fs.promises.writeFile(`${instanceFolder}/icon.png`, buffer);
-
-                                // Crear y guardar el archivo de instancia
                                 let instance = {
                                     name: name,
                                     description: description,
                                     version: version,
-                                    image: `${instanceFolder}/icon.png`,
+                                    image: `${dataDirectory}/.battly/instances/${randomString}/icon.png`,
                                     id: randomString,
                                     loader: loader,
-                                    loaderVersion: `${version}-${loaderVersion}`,
+                                    loaderVersion: loaderVersion,
                                 };
-                                await fs.promises.writeFile(path.join(instanceFolder, 'instance.json'), JSON.stringify(instance));
 
-                                // Copiar carpeta overrides y eliminar después
-                                const overridesFolder = path.join(destinationFolder, 'overrides');
-                                if (fs.existsSync(overridesFolder)) {
-                                    await fs.promises.copy(overridesFolder, destinationFolder);
-                                    await fs.promises.rm(overridesFolder, { recursive: true, force: true });
-                                }
+                                let instance_json = JSON.stringify(instance);
+                                fs.writeFileSync(
+                                    path.join(
+                                        `${dataDirectory}/.battly/instances/${randomString}`,
+                                        "instance.json"
+                                    ),
+                                    instance_json
+                                );
 
-                                // Descargar mods del manifest
-                                const axios = require('axios');
+                                await fs.copy(path.join(destinationFolder, 'overrides'), destinationFolder);
+
+                                //eliminar la carpeta overrides
+                                await fs.remove(path.join(destinationFolder, 'overrides'));
+
+
                                 for (const mod of manifest.files) {
-                                    const modDataUrl = `https://api.curseforge.com/v1/mods/${mod.projectID}`;
-                                    const responseDatos = await axios.get(modDataUrl, {
+                                    await descargarMod(mod.projectID, mod.fileID, destinoMods, manifestPath);
+                                    const modData = `https://api.curseforge.com/v1/mods/${mod.projectID}`
+                                    const axios = require('axios');
+                                    const responseDatos = await axios.get(modData, {
                                         headers: {
                                             'x-api-key': apiKey,
                                         },
                                     });
 
-                                    const modInfo = responseDatos.data;
-                                    const destinationDir = modInfo.data.latestFiles[0].fileName.endsWith('.jar')
-                                        ? modsFolder
-                                        : `${destinationFolder}/resourcepacks`;
-
-                                    await fs.promises.mkdir(destinationDir, { recursive: true });
-
-                                    await descargarMod(mod.projectID, mod.fileID, destinationDir, manifestPath);
-
                                     restante--;
                                     progress.max = total;
                                     progress.value = total - restante;
                                     totalFilesDownloaded++;
-
-                                    textP2.innerHTML = `<i class="fa-solid fa-spinner fa-spin-pulse"></i>${lang.installing_modpack_can_take}<br><br>${lang.installing_mod} ${modInfo.data.name} (${totalFilesDownloaded} / ${total})`;
-                                    textP2.style.color = '#fff';
+                                    textP2.innerHTML = `<i class="fa-solid fa-spinner fa-spin-pulse"></i>${lang.installing_modpack_can_take}<br><br>${lang.installing_mod} ${responseDatos.data.data.name} (${totalFilesDownloaded} / ${total})`;
+                                    textP2.style.color = "#fff";
 
                                     if (restante === 0) {
                                         modalDiv.remove();
 
-                                        ipcRenderer.send('new-notification', {
+                                        ipcRenderer.send("new-notification", {
                                             title: lang.modpack_installed,
-                                            body: `ModPack ${name} ${lang.modpack_installed_correctly}.`,
+                                            body: `ModPack ${name} ${lang.modpack_installed_correctly}.`
                                         });
 
                                         new Alert().ShowAlert({
                                             icon: 'success',
                                             title: lang.modpack_installed,
-                                            text: `ModPack ${name} ${lang.modpack_installed_correctly}.`,
+                                            text: `ModPack ${name} ${lang.modpack_installed_correctly}.`
                                         });
                                     }
+
                                 }
                             }
-                        } catch (error) {
-                            console.error('Error al extraer el archivo ZIP:', error);
-                            new Alert().ShowAlert({
-                                icon: 'error',
-                                title: lang.error_extracting_modpack,
-                                text: lang.error_extracting_modpack_text,
-                            });
-                        }
+                        }, 1000);
                     } else if (tipoArchivo === 'mrpack') {
                         let randomString = Math.random().toString(36).substring(2, 8);
                         if (!fs.existsSync(`${dataDirectory}/.battly/instances`)) {
@@ -1218,11 +1123,7 @@ class Mods {
                         }
 
                         const zip = new AdmZip(destinationFile);
-                        const zipEntries = await zip.getEntries();
                         await zip.extractAllTo(destinationFolder, true);
-
-
-
                         json = await fs.readFile(path.join(destinationFolder, 'modrinth.index.json'), 'utf8');
 
                         //mover lo que hay en la carpeta overrides a la carpeta battly
@@ -1413,6 +1314,7 @@ class Mods {
             var firstPage = document.createElement('li');
             var firstLink = document.createElement('a');
             firstLink.className = 'pagination-link';
+            console.log(selectedPage);
             if (selectedPage === 0) {
                 firstLink.classList.add('is-current');
             }
@@ -1619,6 +1521,8 @@ class Mods {
 
 
         if (mod_data.dependencies.length > 0) {
+            console.log("El MOD data")
+            console.log(mod_data);
             this.DescargarDependencias(mod, mod_data.game_versions);
         }
     }
@@ -1647,9 +1551,17 @@ class Mods {
         if (mod_data[0].dependencies.length > 0) {
 
             for (let i = 0; i < mod_data[0].dependencies.length; i++) {
+                console.log("La dependencia es:")
+                console.log(mod_data[0].dependencies[i]);
+                console.log("La dependencia es requerida")
                 const dependencyData = await this.ObtenerMod(mod_data[0].dependencies[i].project_id);
+                console.log("La dependencia es:")
                 for (let dependency of dependencyData) {
                     for (let version of supportedVersions) {
+                        console.log("Las versiones soportadas por el mod son:")
+                        console.log(version)
+                        console.log("La dependencia es:")
+                        console.log(dependency)
                         if (dependency.game_versions.includes(version)) {
                             const downloadLink = dependency.files[0].url;
                             const response = await fetch(downloadLink);
@@ -1796,7 +1708,7 @@ class Mods {
   <i class="fa-solid fa-heart"></i> ${lang.followers}: ${mod_data.followers}
   <br>
   <br>
-  ${marked.parse(mod_data.body)}
+  ${mod_data.body.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/!\[(.*?)\]\((.*?)\)/g, '<img alt="$1" src="$2">').replace(/### (.*?)\n/g, '<h3>$1</h3>\n').replace(/## (.*?)\n/g, '<h2>$1</h2>\n').replace(/# (.*?)\n/g, '<h1>$1</h1>\n').replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>').replace(/- (.*)\n/g, '<li>$1</li>\n').replace(/\n---\n/g, '\n<hr>\n').replace(/<!--(.*?)-->/g, '<!--$1-->').replace(/__(.*?)__/g, '<u>$1</u>').replace(/_(.*?)_/g, '<i>$1</i>').replace(/\*(.*?)\*/g, '<i>$1</i>')}
   <br>
   <br>
 

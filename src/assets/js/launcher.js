@@ -10,9 +10,6 @@ const fs = require("fs");
 const { Microsoft, Mojang } = require("./assets/js/libs/mc/Index");
 const { ipcRenderer } = require("electron");
 
-const { Lang } = require("./assets/js/utils/lang.js");
-
-
 import {
   config,
   logger,
@@ -21,7 +18,6 @@ import {
   addAccount,
   accountSelect,
 } from "./utils.js";
-
 import Login from "./panels/login.js";
 import Home from "./panels/home.js";
 import Settings from "./panels/settings.js";
@@ -33,37 +29,29 @@ import Friends from "./panels/friends.js";
 import Chat from "./panels/chat.js";
 import Servers from "./panels/servers.js";
 
-
 class Launcher {
   async init() {
     const loadingText = document.getElementById("loading-text");
     loadingText.innerHTML = "Cargando Panel de Inicio";
     this.initLog();
     console.log("🔄 Iniciando Launcher...");
-    new Lang().GetLang().then(async (lang) => {
-      console.log("🔄 Iniciando Lang...");
-      console.log(lang)
-      if (process.platform == "win32") this.initFrame();
-      this.config = await config.GetConfig().then((res) => res);
-      this.news = await config.GetNews().then((res) => res);
-      this.database = await new database().init();
-      this.createPanels(
-        Login,
-        Home,
-        Settings,
-        Welcome,
-        Mods,
-        Music,
-        NewsPanel,
-        Friends,
-        Chat,
-        Servers
-      );
-      this.getaccounts();
-    }).catch(error => {
-      console.error("Error:", error);
-    });
-
+    if (process.platform == "win32") this.initFrame();
+    this.config = await config.GetConfig().then((res) => res);
+    this.news = await config.GetNews().then((res) => res);
+    this.database = await new database().init();
+    this.createPanels(
+      Login,
+      Home,
+      Settings,
+      Welcome,
+      Mods,
+      Music,
+      NewsPanel,
+      Friends,
+      Chat,
+      Servers
+    );
+    this.getaccounts();
   }
 
   initLog() {
@@ -182,7 +170,7 @@ class Launcher {
         )
           .then((response) => response.json())
           .then((data) => data)
-          .catch((err) => { });
+          .catch((err) => {});
       } catch (error) {
         premiums = [];
       }
@@ -229,7 +217,7 @@ class Launcher {
 
           this.database.update(refresh_accounts, "accounts");
           this.database.update(refresh_profile, "profile");
-          addAccount(refresh_accounts, false, true);
+          addAccount(refresh_accounts);
           if (account.uuid === selectaccount) accountSelect(refresh.uuid);
         } else if (account.meta.type === "Mojang") {
           if (account.meta.offline) {
@@ -237,7 +225,7 @@ class Launcher {
             console.log(
               `🔄 Iniciando cuenta de Mojang con el nombre de ususario ${account.name}...`
             );
-            addAccount(account, false, true);
+            addAccount(account);
             if (account.uuid === selectaccount) accountSelect(account.uuid);
             continue;
           }
@@ -278,7 +266,7 @@ class Launcher {
           };
 
           this.database.update(refresh_accounts, "accounts");
-          addAccount(refresh_accounts, false, true);
+          addAccount(refresh_accounts);
           if (account.uuid === selectaccount) accountSelect(refresh.uuid);
         } else if (account.meta.type === "cracked") {
           console.log(
@@ -287,7 +275,7 @@ class Launcher {
           let isPremium;
           if (!premiums) isPremium = false;
           else isPremium = premiums.includes(account.name);
-          addAccount(account, isPremium, false);
+          addAccount(account, isPremium);
           if (account.uuid === selectaccount) accountSelect(account.uuid);
         }
       }

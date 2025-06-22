@@ -31,17 +31,12 @@ let logFilePath = `${dataDirectory}/.battly/Registro.log`;
 import { consoleOutput } from "../utils/logger.js";
 let consoleOutput_;
 
-const { Lang } = require("./assets/js/utils/lang.js");
-let langs;
-new Lang().GetLang().then(lang_ => {
-  langs = lang_;
-}).catch(error => {
-  console.error("Error:", error);
-});
+import { Lang } from "../utils/lang.js";
 import { Alert } from "../utils/alert.js";
 import * as NBT from "../../../../node_modules/nbtify/dist/index.js";
 
-
+let lang;
+let langs;
 const ShowCrashReport = new CrashReport().ShowCrashReport;
 const LaunchMinecraft = new LoadMinecraft().LaunchMinecraft;
 const DownloadFiles = new LoadMinecraft().DownloadFiles;
@@ -49,6 +44,8 @@ const DownloadFiles = new LoadMinecraft().DownloadFiles;
 class Home {
   static id = "home";
   async init(config, news) {
+    lang = await new Lang().GetLang();
+    langs = lang;
     this.WaitData();
     this.config = config;
     this.news = await news;
@@ -83,14 +80,16 @@ class Home {
     let account = this.database
       .getAccounts()
       .find((account) => account.uuid === uuid.selected);
-    console.log(account)
 
-    fetch("https://api.battlylauncher.com/api/v2/users/obtenerAmigos", {
+    fetch("https://api.battlylauncher.com/api/users/obtenerAmigos", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${account.token}`,
-      }
+      },
+      body: JSON.stringify({
+        username: account.name,
+        password: account.password,
+      }),
     })
       .then((res) => res.json())
       .then(async (res) => {
@@ -456,7 +455,6 @@ class Home {
             cardDescription1.classList.add("content");
             cardDescription1.style.marginLeft = "10px";
             cardDescription1.textContent = instance_json.description;
-            cardDescription1.style.color = "#fff";
             //añadir font-family: 'Poppins';font-weight: 700;
             cardDescription1.style.fontFamily = "Poppins";
             cardDescription1.style.fontWeight = "700";
@@ -469,7 +467,7 @@ class Home {
             cardFooter1.style.display = "none";
 
             const openButton1 = document.createElement("button");
-            openButton1.classList.add("card-footer-item", "button", "is-info", "ten-radius", "is-outlined");
+            openButton1.classList.add("card-footer-item", "button", "is-info", "ten-radius");
             openButton1.innerHTML =
               '<span><i class="fa-solid fa-square-up-right"></i> ' +
               langs.open_instance +
@@ -480,7 +478,7 @@ class Home {
             editButton1.classList.add(
               "card-footer-item",
               "button",
-              "is-warning", "ten-radius", "is-outlined"
+              "is-warning", "ten-radius"
             );
             editButton1.innerHTML =
               '<span><i class="fa-solid fa-folder-open"></i> ' +
@@ -492,7 +490,7 @@ class Home {
             deleteButton1.classList.add(
               "card-footer-item",
               "button",
-              "is-danger", "ten-radius", "is-outlined"
+              "is-danger", "ten-radius"
             );
             deleteButton1.innerHTML =
               '<span><i class="fa-solid fa-folder-minus"></i> ' +
@@ -1132,6 +1130,11 @@ class Home {
               let opts;
               if (account.type === "battly") {
                 opts = {
+                  url:
+                    this.config.game_url === "" ||
+                      this.config.game_url === undefined
+                      ? `${urlpkg}/files`
+                      : this.config.game_url,
                   authenticator: account,
                   detached: true,
                   timeout: 10000,
@@ -1144,14 +1147,26 @@ class Home {
                     enable: true,
                   },
                   verify: false,
+                  ignored: ["loader"],
                   java: false,
                   memory: {
                     min: `${ram.ramMin * 1024}M`,
                     max: `${ram.ramMax * 1024}M`,
                   },
+                  JVM_ARGS: [
+                    "-javaagent:authlib-injector.jar=https://api.battlylauncher.com",
+                    "-Dauthlibinjector.mojangAntiFeatures=enabled",
+                    "-Dauthlibinjector.noShowServerName",
+                    "-Dauthlibinjector.disableHttpd",
+                  ],
                 };
               } else {
                 opts = {
+                  url:
+                    this.config.game_url === "" ||
+                      this.config.game_url === undefined
+                      ? `${urlpkg}/files`
+                      : this.config.game_url,
                   authenticator: account,
                   detached: true,
                   timeout: 10000,
@@ -1164,6 +1179,7 @@ class Home {
                     enable: true,
                   },
                   verify: false,
+                  ignored: ["loader"],
                   java: false,
                   memory: {
                     min: `${ram.ramMin * 1024}M`,
@@ -2468,11 +2484,6 @@ class Home {
         rectangulo.style.backgroundColor = background_loading_screen_color;
       });
     }
-
-    if (!fs.existsSync(`${dataDirectory}\\.battly\\launchboost`)) {
-      document.getElementById("launchboost").removeAttribute("checked");
-    }
-
   }
 
   async IniciarEstadoDiscord() {
@@ -2519,7 +2530,6 @@ class Home {
             let version_optifine = version.replace(/OptiFine.*$/, "OptiFine");
             option.value = version + `-extra`;
             option.innerHTML = version_optifine;
-            option.setAttribute("requiredJavaVersion", this.Versions.versions.find((v) => v.version === version_optifine.toLowerCase()).requiredJavaVersion);
             versiones.appendChild(option);
           } else {
             option.value = version + `-extra`;
@@ -2534,8 +2544,7 @@ class Home {
         }
       }
     } catch (error) {
-      console.error("Error al cargar versiones");
-      console.error(error);
+      console.error("Error al cargar versiones: ", error);
     }
   }
 
@@ -2677,178 +2686,259 @@ class Home {
       fs.mkdirSync(`${dataDirectory}/.battly/versions`);
     }
 
-    const updates = {
-      "news-battly": langs.news_battly,
-      "status-battly": langs.status_battly,
-      "playing-now-text": `<i class="fa-solid fa-music"></i> ${langs.playing_now_text}`,
-      "playing-now-body": langs.playing_now_body,
-      "accounts-btn-text": langs.accounts_btn,
-      "java-btn-text": langs.java_btn,
-      "ram-btn-text": langs.ram_btn,
-      "launcher-btn-text": langs.launcher_btn,
-      "theme-btn-text": langs.theme_btn,
-      "background-btn-text": langs.background_btn,
-      "save-btn-text": langs.save_btn,
-      "account-information": langs.account_information,
-      "mc-id-text": langs.mc_id_text,
-      "mostrarskin-userinfo-btn": langs.showskin_userinfo_btn,
-      "eliminarcuenta-userinfo-btn": `${langs.deleteaccount_userinfo_btn}`,
-      "establecer-skin": `${langs.set_skin}`,
-      "cerrar-userinfo-btn": `${langs.close}`,
-      "my-accounts": `${langs.my_accounts}`,
-      "add-account-text": `${langs.add_account_text}`,
-      "java-settings": `${langs.java_settings}`,
-      "java-text-info": `${langs.java_text_info}`,
-      "java-text-info2": `${langs.java_text_info2}`,
-      "ram-settings": `${langs.ram_settings}`,
-      "ram-text-info": `${langs.ram_text_info}`,
-      "of-ram": `${langs.of_ram}`,
-      "of-ram-disponible": `${langs.of_ram_disponible}`,
-      "you-have-a-total": `${langs.you_have_a_total}`,
-      "battly-settings": `${langs.battly_settings}`,
-      "battly-settings-information": `${langs.battly_settings_information}`,
-      "music_settings_information": `${langs.music_settings_information}`,
-      "minimalize-battly": `${langs.minimalize_battly}`,
-      "keep-battly-opened": `${langs.keep_battly_opened}`,
-      "obtener-socketid-text": `${langs.get_socketid}`,
-      "battly-theme": `${langs.battly_theme}`,
-      "battly-theme-text": `${langs.battly_theme_text}`,
-      "buttons-color": `${langs.buttons_color}`,
-      "bottom-bar-text": `${langs.bottom_bar_text}`,
-      "bottom-bar-opacity": `${langs.bottom_bar_opacity}`,
-      "starting-music": `${langs.starting_music}`,
-      "resize-image-text": `${langs.resize_image_text}`,
-      "establecer-fondo": `${langs.set_background_text}`,
-      "cerrar-preview-btn": `${langs.cancel}`,
-      "customize-background": `${langs.customize_background}`,
-      "resize-background": `${langs.resize_background}`,
-      "background-image-text": `${langs.background_image_text}`,
-      "restablecer-fondo": `${langs.reset_background}`,
-      "select-a-background": `${langs.select_a_background}`,
-      "button_instalar_modpack": `${langs.install_modpack}`,
-      "volver": `${langs.return}`,
-      "input_buscar_mods": `${langs.search_mods}`,
-      "add-friends": `${langs.add_friend}`,
-      "solicitudes": `${langs.show_requests}`,
-      "friends-volver-btn": `${langs.return}`,
-      "welcome_battly_social": `${langs.welcome_battly_social}`,
-      "friends_list_text": `${langs.friends_list_text}`,
-      "start_minecraft_text": `${langs.start_minecraft_text}`,
-      "textInfo": `${langs.select_the_version_that_you_want}`,
-      "select_a_version": `${langs.select_a_version}`,
-      "show-playlists-text": `${langs.playlists}`,
-      "no_song": `${langs.no_song}`,
-      "return-btn": `${langs.return}`,
-      "nombre-de-cancion": `${langs.song_name}`,
-      "reproducir-btn-text": `${langs.search_song}`,
-      "save-playlist-text": `${langs.save_playlist}`,
-      "cancel-btn-login": `${langs.cancel}`,
-      "lost_your_account": `${langs.lost_your_account}`,
-      "recover_it_here": `${langs.recover_it_here}`,
-      "username_text": `${langs.username}`,
-      "password_text": `${langs.password}`,
-      "register_open_btn": `${langs.register_open_btn}`,
-      "login-text": `${langs.login}`,
-      "you-dont-have-account": `${langs.you_dont_have_account}`,
-      "login-btn": `${langs.login}`,
-      "background-loading-screen-color-text": `${langs.background_loading_screen_color_text}`,
-      "you_are_premium_background": `${langs.you_are_premium_background}`,
-      "button_ver_mods": `${langs.mods_list_button}`,
-      "login-with-microsoft": `${langs.login_microsoft_adv_title}`,
-      "login-with-google": `${langs.login_with_google}`,
-      "select_a_type_background": `${langs.select_a_type_background}`,
-      "static-background-text": `${langs.static_background_text}`,
-      "animated-background-text": `${langs.animated_background_text}`,
-      "minimize_music": `${langs.minimize_music}`,
-      "keep_music_opened": `${langs.keep_music_opened}`,
-      "code-login-text": `${langs.code_login_text}`,
-      "code-btn": `${langs.send}`,
-      "cancel-code-btn": `${langs.cancel}`,
-      "battly-settings-what-to-do": `${langs.battly_settings_what_to_do}`,
-      "language_settings_information": `${langs.language_settings_information}`,
-      "language-selector-btn": `${langs.change}`,
-      "launchboost_settings_information_text": `${langs.launchboost_settings_information_text}`,
-      "connected-friends": `${langs.connected_friends}`,
-      "see-friends-btn": `${langs.see_friends} <i class='fa-solid fa-arrow-right'></i>`,
-      "username_text": `${langs.username}`,
-      "password_text": `${langs.password}`,
-      "music-panel-search-text": `${langs.search}`,
-      "your_playlist": `${langs.your_playlist}`,
-      "music-panel-results-text": `${langs.results}`,
-      "you-dont-have-songs-in-the-playlist-1": `${langs.you_dont_have_songs_in_the_playlist_1}`,
-      "you-dont-have-songs-in-the-playlist-2": `${langs.you_dont_have_songs_in_the_playlist_2}`,
-      "settings-button-text": `${langs.settings}`,
-      "news-button-text": `${langs.news}`,
-      "see-folder-text": `${langs.see_folder}`,
-      "startStartVersion": `${langs.launch}`,
-      "cancelStartVersion": `${langs.cancel}`,
-    };
+    document.getElementById(
+      "instancias-txt"
+    ).innerHTML += `<i class="fa-solid fa-folder"></i> ${langs.instances}`;
+    document.getElementById(
+      "download-txt"
+    ).innerHTML += `<i class="fa-solid fa-cloud-arrow-down"></i> ${langs.download}`;
+    document.getElementById(
+      "play-txt"
+    ).innerHTML += `<i class="fa-solid fa-gamepad"></i> ${langs.play}`;
+    document.getElementById("news-battly").innerHTML = langs.news_battly;
+    document.getElementById("status-battly").innerHTML = langs.status_battly;
+    document.getElementById(
+      "playing-now-text"
+    ).innerHTML = `<i class="fa-solid fa-music"></i> ${langs.playing_now_text}`;
+    document.getElementById("playing-now-body").innerHTML =
+      langs.playing_now_body;
 
-    // Apply updates for elements using only getElementById
-    Object.keys(updates).forEach(id => {
-      const element = document.getElementById(id);
-      if (element) {
-        element.innerHTML = updates[id];
-      }
-    });
-
-    document.getElementById("instancias-txt").innerHTML += `<i class="fa-solid fa-folder"></i> ${langs.instances}`;
-    document.getElementById("download-txt").innerHTML += `<i class="fa-solid fa-cloud-arrow-down"></i> ${langs.download}`;
-    document.getElementById("play-txt").innerHTML += `<i class="fa-solid fa-gamepad"></i> ${langs.play}`;
-    document.getElementById("music-btn-text").innerHTML = `<i class="fa-solid fa-music"></i> ${langs.music_settings_information}`;
-    document.getElementById("tpyeofnews")[0].innerHTML = langs.battly_news;
-    document.getElementById("tpyeofnews")[1].innerHTML = langs.minecraft_news;
-    document.getElementById("nombre-de-cancion").placeholder = langs.song_name;
-    document.getElementById("input_buscar_mods").placeholder = langs.search_mods;
-
+    // document
+    //   .getElementById("settings-btn")
+    //   .querySelector(".settings-button-span").innerHTML =
+    //   langs.tooltip_settings;
     document
       .getElementById("boton_abrir_mods")
       .querySelector(".button-span").innerHTML = langs.tooltip_mods;
-
     document
       .getElementById("music-btn")
       .querySelector(".button-span").innerHTML = langs.tooltip_music;
-
     document
       .getElementById("instancias-btn")
       .querySelector(".button-span").innerHTML = langs.tooptip_instances;
-
     document
       .getElementById("download-btn")
       .querySelector(".button-span").innerHTML = langs.tooptip_download;
-
     document
       .getElementById("play-btn")
       .querySelector(".play-button-span").innerHTML = langs.tooltip_play;
-
     document
       .getElementById("accounts-btn")
       .querySelector(".button-span").innerHTML = langs.tooltip_accounts;
-
     document
       .getElementById("java-btn")
       .querySelector(".button-span").innerHTML = langs.tooltip_java;
-
-    document
-      .getElementById("ram-btn")
-      .querySelector(".button-span").innerHTML = langs.tooltip_ram;
-
+    document.getElementById("ram-btn").querySelector(".button-span").innerHTML =
+      langs.tooltip_ram;
     document
       .getElementById("launcher-btn")
       .querySelector(".button-span").innerHTML = langs.tooltip_launcher;
-
     document
       .getElementById("theme-btn")
       .querySelector(".button-span").innerHTML = langs.tooltip_theme;
-
     document
       .getElementById("background-btn")
       .querySelector(".button-span").innerHTML = langs.tooltip_background;
-
     document
       .getElementById("save-btn")
       .querySelector(".button-span").innerHTML = langs.tooltip_save;
 
+    /* settings */
+    document.getElementById("accounts-btn-text").innerHTML = langs.accounts_btn;
+    document.getElementById("java-btn-text").innerHTML = langs.java_btn;
+    document.getElementById("ram-btn-text").innerHTML = langs.ram_btn;
+    document.getElementById("launcher-btn-text").innerHTML = langs.launcher_btn;
+    document.getElementById("theme-btn-text").innerHTML = langs.theme_btn;
+    document.getElementById("background-btn-text").innerHTML =
+      langs.background_btn;
+    document.getElementById("save-btn-text").innerHTML = langs.save_btn;
+    document.getElementById("account-information").innerHTML =
+      langs.account_information;
+    document.getElementById("mc-id-text").innerHTML = langs.mc_id_text;
+    document.getElementById("mostrarskin-userinfo-btn").innerHTML =
+      langs.showskin_userinfo_btn;
+    document.getElementById(
+      "eliminarcuenta-userinfo-btn"
+    ).innerHTML = `${langs.deleteaccount_userinfo_btn}`;
+    document.getElementById("establecer-skin").innerHTML = `${langs.set_skin}`;
+    document.getElementById("cerrar-userinfo-btn").innerHTML = `${langs.close}`;
+    document.getElementById("my-accounts").innerHTML = `${langs.my_accounts}`;
+    document.getElementById(
+      "add-account-text"
+    ).innerHTML = `${langs.add_account_text}`;
+    document.getElementById(
+      "java-settings"
+    ).innerHTML = `${langs.java_settings}`;
+    document.getElementById(
+      "java-text-info"
+    ).innerHTML = `${langs.java_text_info}`;
+    document.getElementById(
+      "java-text-info2"
+    ).innerHTML = `${langs.java_text_info2}`;
+    document.getElementById("ram-settings").innerHTML = `${langs.ram_settings}`;
+    document.getElementById(
+      "ram-text-info"
+    ).innerHTML = `${langs.ram_text_info}`;
+    document.getElementById("of-ram").innerHTML = `${langs.of_ram}`;
+    document.getElementById(
+      "of-ram-disponible"
+    ).innerHTML = `${langs.of_ram_disponible}`;
+    document.getElementById(
+      "you-have-a-total"
+    ).innerHTML = `${langs.you_have_a_total}`;
+    document.getElementById(
+      "ram-text-info"
+    ).innerHTML = `${langs.ram_text_info}`;
+    document.getElementById(
+      "battly-settings"
+    ).innerHTML = `${langs.battly_settings}`;
+    document.getElementById(
+      "battly-settings-information"
+    ).innerHTML = `${langs.battly_settings_information}`;
+    document.getElementById(
+      "music_settings_information"
+    ).innerHTML = `${langs.music_settings_information}`;
+    document.getElementById(
+      "minimalize-battly"
+    ).innerHTML = `${langs.minimalize_battly}`;
+    document.getElementById(
+      "keep-battly-opened"
+    ).innerHTML = `${langs.keep_battly_opened}`;
+    document.getElementById(
+      "obtener-socketid-text"
+    ).innerHTML = `${langs.get_socketid}`;
+    document.getElementById("battly-theme").innerHTML = `${langs.battly_theme}`;
+    document.getElementById(
+      "battly-theme-text"
+    ).innerHTML = `${langs.battly_theme_text}`;
+    document.getElementById(
+      "buttons-color"
+    ).innerHTML = `${langs.buttons_color}`;
+    document.getElementById(
+      "bottom-bar-text"
+    ).innerHTML = `${langs.bottom_bar_text}`;
+    document.getElementById(
+      "bottom-bar-opacity"
+    ).innerHTML = `${langs.bottom_bar_opacity}`;
+    document.getElementById(
+      "starting-music"
+    ).innerHTML = `${langs.starting_music}`;
+    document.getElementById(
+      "resize-image-text"
+    ).innerHTML = `${langs.resize_image_text}`;
+    document.getElementById(
+      "establecer-fondo"
+    ).innerHTML = `${langs.set_background_text}`;
+    document.getElementById("cerrar-preview-btn").innerHTML = `${langs.cancel}`;
+    document.getElementById(
+      "customize-background"
+    ).innerHTML = `${langs.customize_background}`;
+    document.getElementById(
+      "resize-background"
+    ).innerHTML = `${langs.resize_background}`;
+    document.getElementById(
+      "background-image-text"
+    ).innerHTML = `${langs.background_image_text}`;
+    document.getElementById(
+      "restablecer-fondo"
+    ).innerHTML = `${langs.reset_background}`;
+    document.getElementById(
+      "select-a-background"
+    ).innerHTML = `${langs.select_a_background}`;
+    document.getElementById(
+      "button_instalar_modpack"
+    ).innerHTML = `${langs.install_modpack}`;
+    document.getElementById("volver").innerHTML = `${langs.return}`;
+    document.getElementById(
+      "input_buscar_mods"
+    ).placeholder = `${langs.search_mods}`;
+    document.getElementById("add-friends").innerHTML = `${langs.add_friend}`;
+    document.getElementById("solicitudes").innerHTML = `${langs.show_requests}`;
+    document.getElementById("friends-volver-btn").innerHTML = `${langs.return}`;
+    document.getElementById(
+      "welcome_battly_social"
+    ).innerHTML = `${langs.welcome_battly_social}`;
+    document.getElementById(
+      "friends_list_text"
+    ).innerHTML = `${langs.friends_list_text}`;
+    document.getElementById(
+      "start_minecraft_text"
+    ).innerHTML = `${langs.start_minecraft_text}`;
+    document.getElementById(
+      "textInfo"
+    ).innerHTML = `${langs.select_the_version_that_you_want}`;
+    document.getElementById(
+      "select_a_version"
+    ).innerHTML = `${langs.select_a_version}`;
+    document.getElementById(
+      "show-playlists-text"
+    ).innerHTML = `${langs.playlists}`;
+    document.getElementById("no_song").innerHTML = `${langs.no_song}`;
+    document.getElementById("return-btn").innerHTML = `${langs.return}`;
+    //document.getElementById("playing-now").innerHTML = `${langs.playing_now}`;
+    document.getElementById(
+      "nombre-de-cancion"
+    ).placeholder = `${langs.song_name}`;
+    document.getElementById(
+      "reproducir-btn-text"
+    ).innerHTML = `${langs.search_song}`;
+    document.getElementById(
+      "save-playlist-text"
+    ).innerHTML = `${langs.save_playlist}`;
+    document.getElementById("cancel-btn-login").innerHTML = `${langs.cancel}`;
+    //document.getElementById("cancel_login_two").innerHTML = `${langs.cancel}`;
+    document.getElementById(
+      "lost_your_account"
+    ).innerHTML = `${langs.lost_your_account}`;
+    document.getElementById(
+      "recover_it_here"
+    ).innerHTML = `${langs.recover_it_here}`;
+    document.getElementById("username_text").placeholder = `${langs.username}`;
+    document.getElementById("password_text").placeholder = `${langs.password}`;
+    document.getElementById(
+      "register_open_btn"
+    ).innerHTML = `${langs.register_open_btn}`;
+    document.getElementById("login-text").innerHTML = `${langs.login}`;
+    document.getElementById(
+      "you-dont-have-account"
+    ).innerHTML = `${langs.you_dont_have_account}`;
+    document.getElementById("login-btn").innerHTML = `${langs.login}`;
+    document.getElementById(
+      "background-loading-screen-color-text"
+    ).innerHTML = `${langs.background_loading_screen_color_text}`;
+    document.getElementById(
+      "you_are_premium_background"
+    ).innerHTML = `${langs.you_are_premium_background}`;
+
+    document.getElementById(
+      "button_ver_mods"
+    ).innerHTML = `${langs.mods_list_button}`;
+    document.getElementById(
+      "login-with-microsoft"
+    ).innerHTML = `${langs.login_microsoft_adv_title}`;
+    document.getElementById(
+      "login-with-google"
+    ).innerHTML = `${langs.login_with_google}`;
+    document.getElementById(
+      "select_a_type_background"
+    ).innerHTML = `${langs.select_a_type_background}`;
+    document.getElementById(
+      "static-background-text"
+    ).innerHTML = `${langs.static_background_text}`;
+    document.getElementById(
+      "animated-background-text"
+    ).innerHTML = `${langs.animated_background_text}`;
+    document.getElementById(
+      "minimize_music"
+    ).innerHTML = `${langs.minimize_music}`;
+    document.getElementById(
+      "keep_music_opened"
+    ).innerHTML = `${langs.keep_music_opened}`;
+    document.getElementById(
+      "code-login-text"
+    ).innerHTML = `${langs.code_login_text}`;
+    document.getElementById("code-btn").innerHTML = `${langs.send}`;
+    document.getElementById("cancel-code-btn").innerHTML = `${langs.cancel}`;
   }
 
   async initNews() {
@@ -2944,15 +3034,6 @@ class Home {
       }
     });
 
-    document.getElementById("header-text-to-add").addEventListener("click", () => {
-      console.log("click");
-      if (os.platform() === "win32") {
-        shell.openExternal("https://battlylauncher.com/premium?utm_source=launcher&utm_medium=header&utm_campaign=premium");
-      } else {
-        window.open("https://battlylauncher.com/premium", "_blank");
-      }
-    });
-
 
     async function LoadMinecraftNews() {
       function compareDates(a, b) {
@@ -3011,15 +3092,6 @@ class Home {
         LoadNews();
       } else {
         LoadMinecraftNews();
-      }
-    });
-
-    document.getElementById("header-text-to-add").addEventListener("click", () => {
-      const os = require("os");
-      if (os.platform() === "win32") {
-        shell.openExternal("https://battlylauncher.com/premium?utm_source=launcher&utm_medium=header&utm_campaign=premium");
-      } else {
-        window.open("https://battlylauncher.com/premium", "_blank");
       }
     });
   }
@@ -3087,10 +3159,10 @@ class Home {
     );
 
     let data = this.BattlyConfig;
-    let new_version = data.new_version_v2;
-    let new_version_message = data.new_version_message_v2;
-    let new_version_news = data.new_version_news_v2;
-    let new_version_html = data.new_version_html_v2;
+    let new_version = data.new_version;
+    let new_version_message = data.new_version_message;
+    let new_version_news = data.new_version_news;
+    let new_version_html = data.new_version_html;
 
     if (new_version == true) {
       const Swal_ = require("./assets/js/libs/sweetalert/sweetalert2.all.min");
@@ -3247,7 +3319,6 @@ class Home {
       .getElementById("startStartVersion")
       .addEventListener("click", async () => {
         let version = document.getElementById("listaDeVersiones").value;
-        let requiredJavaVersion = document.getElementById("listaDeVersiones").selectedOptions[0].getAttribute("requiredJavaVersion");
         console.log(version);
         let versionType;
         let progressBar1 = document.getElementById("progressBar1_");
@@ -3441,62 +3512,7 @@ class Home {
 
         console.log(`✅ Versión detectada: ${version}`);
 
-        async function CheckAndDownloadJava() {
-          let folders = fs.readdirSync(`${dataDirectory}/.battly/runtime`);
-          let found = false;
-          let realJavaVersion;
-          folders.forEach((folder) => {
-            if (folder.startsWith(requiredJavaVersion)) {
-              found = true;
-              realJavaVersion = folder;
-            }
-          });
-
-          if (!found) {
-            console.log(document.getElementById("listaDeVersiones").value);
-            if (version.includes("OptiFine")) {
-              new Alert().ShowAlert({
-                icon: "error",
-                title: langs.download_the_version_in_vanilla,
-                text: langs.download_the_version_in_vanilla_text,
-              });
-            }
-
-            return false;
-          } else {
-            const inputRutaJava =
-              document.getElementById("ruta-java-input");
-            if (process.platform === "win32") {
-              let javaPath = `${dataDirectory}/.battly/runtime/${realJavaVersion}/bin/java.exe`;
-              if (fs.existsSync(javaPath)) {
-                inputRutaJava.value = javaPath;
-                localStorage.setItem("java-path", javaPath);
-                console.log(`Java reconfigurado a ${javaPath}`);
-              } else {
-                inputRutaJava.value =
-                  "Java no encontrado. Haz click aquí para buscarlo.";
-              }
-            } else {
-              let javaPath = `${dataDirectory}/.battly/runtime/${realJavaVersion}/bin/java`;
-              if (fs.existsSync(javaPath)) {
-                inputRutaJava.value = javaPath;
-                localStorage.setItem("java-path", javaPath);
-              } else {
-                inputRutaJava.value =
-                  "Java no encontrado. Haz click aquí para buscarlo.";
-              }
-            }
-          }
-
-          return true;
-        }
-
-
-        let javapath;
-        if (await CheckAndDownloadJava()) {
-          javapath = localStorage.getItem("java-path");
-        }
-
+        const javapath = localStorage.getItem("java-path");
         const isExtra = version.endsWith("-extra");
         const gameUrl = this.config.game_url || `${urlpkg}/files`;
         const rootPath = `${dataDirectory}/.battly`;
@@ -3525,7 +3541,7 @@ class Home {
             enable: loaderEnable,
           },
           verify: false,
-          ignored: ["libraries/com/mojang/authlib"],
+          ignored: ["loader"],
           java: false,
           memory: memory,
         };
@@ -3591,19 +3607,21 @@ class Home {
             console.log(error);
           }
         }
+
         async function initializeLaunch() {
           switch (true) {
             case version === "1.8":
               await handleLaunch(launch.launch.bind(launch), opts);
               break;
             case version_real.endsWith("-forge") || version_real.endsWith("-fabric") || version_real.endsWith("-quilt"):
-              await launch_core.Launch(opts);
+              await handleLaunch(launch_core.Launch.bind(launch_core), opts);
               break;
             case version.endsWith("-extra"):
               handleLaunch(launch.launch.bind(launch), opts);
               break;
             default:
-              await launch_core.Launch(opts);
+              await handleLaunch(launch_core.Launch.bind(launch_core), { ...opts, flag: true });
+              break;
           }
         }
 
@@ -3797,8 +3815,7 @@ class Home {
         launch.on("close", (code) => {
           consoleOutput_ += `---------- [MC] Código de salida: ${code}\n ----------`;
 
-          if (launcherSettings.launcher.close === "close-launcher")
-            ipcRenderer.send("main-window-show");
+          if (launcherSettings.launcher.close === "close-launcher") ipcRenderer.send("main-window-show");
 
           ipcRenderer.send("updateStatus", {
             status: "online",
@@ -3843,7 +3860,6 @@ class Home {
         });
 
         launch_core.on("debug", (e) => {
-          console.log(e);
           consoleOutput_ += `[MC] ${JSON.stringify(e, null, 2)}\n`;
           const errorMap = {
             "Failed to start due to TypeError": `${langs.error_detected_one} \nError:\n${e}`,
@@ -3871,7 +3887,6 @@ class Home {
         });
 
         launch_core.on("data", async (e) => {
-          console.log(e);
           new logger("Minecraft", "#36b030");
           consoleOutput_ += `[MC] ${e}\n`;
 
@@ -3972,7 +3987,6 @@ class Home {
         });
 
         launch_core.on("progress", (progress, size) => {
-          console.log(progress, size);
           consoleOutput_ += `[DESCARGANDO] ${progress} / ${size}\n`;
           if (!seMostroInstalando_core) {
             seMostroInstalando_core = true;
@@ -3997,36 +4011,6 @@ class Home {
           progressBar1.style.display = "block";
           progressBar1.value = progress_actual;
           progressBar1.max = 100;
-        });
-
-        launch_core.on("error", (err) => {
-          consoleOutput_ += `[ERROR] ${JSON.stringify(err, null, 2)}\n`;
-          console.error(err.message);
-          progressBar1.style.display = "none";
-          info.style.display = "none";
-          playBtn.style.display = "";
-        });
-
-        launch_core.on("close", (code) => {
-          consoleOutput_ += `---------- [MC] Código de salida: ${code}\n ----------`;
-
-          if (launcherSettings.launcher.close === "close-launcher")
-            ipcRenderer.send("main-window-show");
-
-          ipcRenderer.send("updateStatus", {
-            status: "online",
-            details: langs.in_the_menu,
-            username: account.name,
-          });
-          info.style.display = "none";
-          playBtn.style.display = "";
-          footermodaliniciarversion.style.display = "";
-          textInfo.innerHTML = "Selecciona la versión que quieres abrir";
-          new logger("Launcher", "#3e8ed0");
-          console.log("🔧 Minecraft cerrado");
-          document.getElementById("carga-de-versiones").style.display = "none";
-          progressBar1.style.display = "none";
-          ipcRenderer.send("delete-and-new-status-discord");
         });
       });
 
@@ -5652,19 +5636,17 @@ class Home {
                   });
 
                   launch.on("close", (e) => {
+                    //eliminar el modaldiv1
+                    modalDiv1.remove();
 
                     if (launcherSettings.launcher.close === "close-launcher")
                       ipcRenderer.send("main-window-show");
-
-
 
                     ipcRenderer.send("updateStatus", {
                       status: "online",
                       details: langs.in_the_menu,
                       username: account.name,
                     });
-
-                    modalDiv1.remove();
                   });
 
                   //download status
@@ -5699,14 +5681,12 @@ class Home {
             version = version.replace("-optifine", "");
 
             // Obtén el valor de fileName desde los datos de la versión
-            let fileName;
-            let realVersion;
-            let requiredJavaVersion;
+            let fileName = "";
+            let realVersion = "";
             for (let i = 0; i < optifineVersions.length; i++) {
               if (optifineVersions[i].realVersion == version) {
                 fileName = optifineVersions[i].fileName;
                 realVersion = optifineVersions[i].realVersion;
-                requiredJavaVersion = optifineVersions[i].requiredJavaVersion;
               }
             }
 
@@ -6151,51 +6131,68 @@ class Home {
             }
 
             async function CheckAndDownloadJava() {
-              // Cargar todas las carpetas de %appdata%/.battly/runtime, si existe, buscar si existe alguna carpeta que empieze por %appdata%/.battly/runtime/${requiredJavaVersion}
-              // Si existe, poner la ruta en el input
-              // Si no existe, mostrar un mensaje de error y no permitir continuar
-              let folders = fs.readdirSync(`${dataDirectory}/.battly/runtime`);
-              let found = false;
-              let realJavaVersion;
-              folders.forEach((folder) => {
-                if (folder.startsWith(requiredJavaVersion)) {
-                  found = true;
-                  realJavaVersion = folder;
-                }
-              });
-
-              if (!found) {
+              if (!fs.existsSync(`${dataDirectory}/.battly/versions/1.20.1`)) {
                 modalDiv1.remove();
 
                 new Alert().ShowAlert({
                   icon: "error",
-                  title: langs.download_the_version_in_vanilla,
-                  text: langs.download_the_version_in_vanilla_text,
+                  title: langs.version_java_error_title,
+                  text: langs.version_java_error,
                 });
-
                 return false;
               } else {
                 const inputRutaJava =
                   document.getElementById("ruta-java-input");
                 if (process.platform === "win32") {
-                  let javaPath = `${dataDirectory}/.battly/runtime/${realJavaVersion}/bin/java.exe`;
-                  if (fs.existsSync(javaPath)) {
-                    inputRutaJava.value = javaPath;
-                    localStorage.setItem("java-path", javaPath);
-                    console.log(`Java reconfigurado a ${javaPath}`);
+                  if (
+                    fs.existsSync(
+                      `${dataDirectory}/.battly/runtime/jre-17.0.8-win32`
+                    )
+                  ) {
+                    //si existe, poner la ruta en el input
+                    inputRutaJava.value = `${dataDirectory}/.battly/runtime/jre-17.0.8-win32/bin/java.exe`;
+                    localStorage.setItem(
+                      "java-path",
+                      `${dataDirectory}/.battly/runtime/jre-17.0.8-win32/bin/java.exe`
+                    );
+                  } else if (
+                    fs.existsSync(
+                      `${dataDirectory}/.battly/runtime/jre-17.0.1.12.1-win32`
+                    )
+                  ) {
+                    //si existe, poner la ruta en el input
+                    inputRutaJava.value = `${dataDirectory}/.battly/runtime/jre-17.0.1.12.1-win32/bin/java.exe`;
+                    localStorage.setItem(
+                      "java-path",
+                      `${dataDirectory}/.battly/runtime/jre-17.0.1.12.1-win32/bin/java.exe`
+                    );
+                  } else if (
+                    fs.existsSync(
+                      `${dataDirectory}/.battly/runtime/jre-17.0.8-windows-x64`
+                    )
+                  ) {
+                    inputRutaJava.value = `${dataDirectory}/.battly/runtime/jre-17.0.8-windows-x64/bin/java.exe`;
+                    localStorage.setItem(
+                      "java-path",
+                      `${dataDirectory}/.battly/runtime/jre-17.0.8-windows-x64/bin/java.exe`
+                    );
+                  } else if (
+                    fs.existsSync(
+                      `${dataDirectory}/.battly/runtime/jre-17.0.1.12.1-windows-x64`
+                    )
+                  ) {
+                    inputRutaJava.value = `${dataDirectory}/.battly/runtime/jre-17.0.1.12.1-windows-x64/bin/java.exe`;
+                    localStorage.setItem(
+                      "java-path",
+                      `${dataDirectory}/.battly/runtime/jre-17.0.1.12.1-windows-x64/bin/java.exe`
+                    );
                   } else {
                     inputRutaJava.value =
                       "Java no encontrado. Haz click aquí para buscarlo.";
                   }
                 } else {
-                  let javaPath = `${dataDirectory}/.battly/runtime/${realJavaVersion}/bin/java`;
-                  if (fs.existsSync(javaPath)) {
-                    inputRutaJava.value = javaPath;
-                    localStorage.setItem("java-path", javaPath);
-                  } else {
-                    inputRutaJava.value =
-                      "Java no encontrado. Haz click aquí para buscarlo.";
-                  }
+                  inputRutaJava.value =
+                    "Java no encontrado. Haz click aquí para buscarlo.";
                 }
               }
 
@@ -6879,7 +6876,7 @@ class Home {
                             : false,
                 },
                 verify: false,
-                ignored: ["loader", "libraries"],
+                ignored: ["loader", ...this.config.ignored],
                 java: false,
                 memory: {
                   min: `${ram.ramMin * 1024}M`,
@@ -6925,7 +6922,7 @@ class Home {
                         : false,
                 },
                 verify: false,
-                ignored: ["loader", "libraries"],
+                ignored: ["loader", ...this.config.ignored],
                 java: false,
                 memory: {
                   min: `${ram.ramMin * 1024}M`,
@@ -6967,7 +6964,7 @@ class Home {
                         : false,
                 },
                 verify: false,
-                ignored: ["loader", "libraries"],
+                ignored: ["loader", ...this.config.ignored],
                 java: false,
                 memory: {
                   min: `${ram.ramMin * 1024}M`,
@@ -7013,7 +7010,7 @@ class Home {
                         : false,
                 },
                 verify: false,
-                ignored: ["loader", "libraries"],
+                ignored: ["loader", ...this.config.ignored],
                 java: false,
                 memory: {
                   min: `${ram.ramMin * 1024}M`,
@@ -7495,10 +7492,6 @@ class Home {
   initBtn() {
     document.getElementById("settings-btn").addEventListener("click", () => {
       changePanel("settings");
-    });
-
-    document.getElementById("servers-btn").addEventListener("click", () => {
-      changePanel("servers");
     });
   }
 

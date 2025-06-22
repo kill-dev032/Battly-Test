@@ -1,7 +1,7 @@
 {
   "name": "battly-studios",
   "productname": "Battly Launcher",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "buildVersion": "1003",
   "description": "",
   "main": "src/app.js",

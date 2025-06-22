@@ -26,21 +26,16 @@ const Toast = Swal.mixin({
   },
 });
 
+import { Lang } from "../utils/lang.js";
 import { Alert } from "../utils/alert.js";
-
-const { Lang } = require("./assets/js/utils/lang.js");
 let lang;
-new Lang().GetLang().then(lang_ => {
-  lang = lang_;
-}).catch(error => {
-  console.error("Error:", error);
-});
 
 class Settings {
   static id = "settings";
   async init(config) {
     this.config = config;
     this.database = await new database().init();
+    lang = await new Lang().GetLang();
     this.initSettingsDefault();
     this.initTab();
     this.initAccount();
@@ -236,23 +231,6 @@ class Settings {
         });
       });
 
-    document.getElementById("language-selector").value = localStorage.getItem("lang");
-    document.getElementById("language-selector-btn").addEventListener("click", () => {
-      let lang_ = document.getElementById("language-selector");
-
-      new Alert().ShowAlert({
-        title: lang.changing_language,
-        text: lang.changing_language_text,
-        icon: "info",
-      });
-
-      localStorage.setItem("lang", lang_.value);
-
-      setTimeout(() => {
-        ipcRenderer.send("restartLauncher");
-      }, 4000);
-    });
-
     document
       .getElementById("background-btn")
       .addEventListener("click", async (e) => {
@@ -269,41 +247,12 @@ class Settings {
           document.getElementById("animated-background-div").style.display = "";
           document.getElementById("not-animated-background-div").style.display =
             "none";
-          document.getElementById("launchboost-panel").style.display = "block";
         } else {
           isPremium = false;
           document.getElementById("not-animated-background-div").style.display =
             "";
           document.getElementById("animated-background-div").style.display =
             "none";
-          document.getElementById("launchboost-panel").style.display = "none";
-        }
-      });
-
-    document
-      .getElementById("launcher-btn")
-      .addEventListener("click", async (e) => {
-        let uuid = (await this.database.get("1234", "accounts-selected")).value;
-        let account = this.database
-          .getAccounts()
-          .find((account) => account.uuid === uuid.selected);
-        let isPremium;
-
-        const accountDiv = document.getElementById(account.uuid);
-        const accountName = accountDiv.querySelector(".account-name");
-        if (accountName.querySelector(".fa-fire")) {
-          isPremium = true;
-          document.getElementById("animated-background-div").style.display = "";
-          document.getElementById("not-animated-background-div").style.display =
-            "none";
-          document.getElementById("launchboost-panel").style.display = "block";
-        } else {
-          isPremium = false;
-          document.getElementById("not-animated-background-div").style.display =
-            "";
-          document.getElementById("animated-background-div").style.display =
-            "none";
-          document.getElementById("launchboost-panel").style.display = "none";
         }
       });
 
@@ -490,22 +439,6 @@ class Settings {
         sonido_inicio.volume = 0.8;
         sonido_inicio.play();
       });
-
-
-    document.getElementById("launchboost").addEventListener("click", () => {
-      const fs = require("fs");
-
-      if (document.getElementById("launchboost").checked) {
-        localStorage.setItem("launchboost", "yes");
-        fs.writeFileSync(
-          `${dataDirectory}\\.battly\\launchboost`,
-          "launchboost"
-        );
-      } else {
-        localStorage.removeItem("launchboost");
-        fs.unlinkSync(`${dataDirectory}\\.battly\\launchboost`);
-      }
-    });
   }
 
   initAccount() {
@@ -1178,17 +1111,15 @@ class Settings {
         await new Promise((resolve) => {
           let interval;
           interval = setInterval(() => {
-            console.log(javaPathInputFile.value)
             if (javaPathInputFile.value != "") resolve(clearInterval(interval));
           }, 100);
         });
 
         if (
-          javaPathInputFile.value.replace(".exe", "").endsWith("java")
+          javaPathInputFile.value.replace(".exe", "").endsWith("java") ||
+          javaPathInputFile.value.replace(".exe", "").endsWith("javaw")
         ) {
           let file = javaPathInputFile.files[0].path;
-          console.log(javaPathInputFile)
-          console.log(file);
           javaPathInputTxt.value = file;
           localStorage.setItem("java-path", file);
 

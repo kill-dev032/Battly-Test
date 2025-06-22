@@ -15,15 +15,8 @@ let dev = process.env.NODE_ENV === 'dev';
 const fs = require('fs');
 const fetch = require('node-fetch');
 const axios = require("axios");
-const { Lang } = require('./assets/js/utils/lang.js');
+import { Lang } from './utils/lang.js';
 let lang;
-new Lang().GetLang().then(lang_ => {
-	lang = lang_;
-}).catch(error => {
-	console.error("Error:", error);
-});
-
-let message;
 
 class Splash {
 
@@ -38,28 +31,17 @@ class Splash {
 	}
 
 	async LoadLang() {
+		lang = await new Lang().GetLang();
+		this.message.innerHTML = lang.salutate;
 	}
 
 	async start() {
 		let splashes = [{
 			"message": "Battly Launcher",
 			"author": "Battly Studios"
-		}]
+		},]
 
-
-		let strings = {
-			"es": "¡Hola!",
-			"en": "Hello!",
-			"fr": "Bonjour!",
-			"de": "Hallo!",
-			"it": "Ciao!",
-			"pt": "Olá!",
-			"ru": "Привет!",
-			"ja": "こんにちは!",
-			"ar": "مرحبا!",
-		}
-
-		this.message.innerHTML = strings[localStorage.getItem("lang") ? localStorage.getItem("lang") : "en"];
+		console.log(document.getElementById("version_id"));
 
 		let sonidoDB = localStorage.getItem("sonido-inicio") ? localStorage.getItem("sonido-inicio") : "start";
 		let sonido_inicio = new Audio('./assets/audios/' + sonidoDB + '.mp3');
@@ -119,15 +101,15 @@ class Splash {
 			}
 		})
 
-		// ipcRenderer.invoke('update-new-app').then(err => {
-		// 	if (err) {
-		// 		if (err.error) {
-		// 			let error = err.message;
-		// 			error = error.toString().slice(0, 50);
-		// 			this.shutdown(`${lang.update_error}<br>${error}`);
-		// 		}
-		// 	}
-		// })
+		ipcRenderer.invoke('update-new-app').then(err => {
+			if (err) {
+				if (err.error) {
+					let error = err.message;
+					error = error.toString().slice(0, 50);
+					this.shutdown(`${lang.update_error}<br>${error}`);
+				}
+			}
+		})
 
 		ipcRenderer.on('updateAvailable', () => {
 			this.setStatus(lang.update_available);

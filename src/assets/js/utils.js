@@ -11,14 +11,8 @@ const axios = require('axios');
 const { ipcRenderer } = require('electron');
 import { Alert } from "./utils/alert.js";
 
-const { Lang } = require("./assets/js/utils/lang.js");
 let lang;
-new Lang().GetLang().then(lang_ => {
-    lang = lang_;
-}).catch(error => {
-    console.error("Error:", error);
-});
-
+import { Lang } from "./utils/lang.js";
 
 export {
     config as config,
@@ -30,6 +24,10 @@ export {
     accountSelect as accountSelect
 }
 
+async function Langs() {
+    lang = await new Lang().GetLang();
+}
+
 let db;
 async function LoadDatabase() {
     db = await new database().init();
@@ -38,6 +36,8 @@ async function LoadDatabase() {
 }
 
 LoadDatabase();
+
+Langs();
 
 function changePanel(id) {
     const rectangulos = document.querySelectorAll('.rectangulo');
@@ -83,28 +83,24 @@ function changePanel(id) {
 
 
 
-async function addAccount(data, isPremium, isOffline) {
+async function addAccount(data, isPremium) {
     document.querySelector(".preload-content").style.display = "block";
     let div = document.createElement("div");
     div.classList.add("account");
     div.id = data.uuid;
     console.log(`✅ Cuenta: ${div.id} agregada`)
     div.innerHTML = `
-        <img class="account-image mc-face-viewer-8x" data-offline="${isOffline}">
-        <div class="account-name" id="user-name">
-            ${data.name}
-            ${isPremium ? '<i class="fa-solid fa-fire" style="cursor:pointer;margin-left:5px;"></i>' : ''}
-            ${isOffline ? '<i class="fa-solid fa-cube" style="cursor:pointer;margin-left:5px;"></i>' : ''}
-        </div>
+        <img class="account-image mc-face-viewer-8x">
+        <div class="account-name" id="user-name"> ${data.name}${isPremium ? '<i class="fa-solid fa-fire" style="cursor:pointer;margin-left:5px;"></i>' : ''}</div>
         <div class="account-delete"><i class="fa-solid fa-arrow-right" id="` + data.uuid + `"></i></div>
         `
     await document.querySelector('.accounts').appendChild(div);
 
-    headplayer(data.uuid, data.name, isOffline);
+    headplayer(data.uuid, data.name);
 }
 
 function accountSelect(uuid) {
-    console.log(`✅ Cuenta seleccionada: ${uuid}`);
+    console.log(`✅ Cuenta seleccionada: ${uuid}`)
     let account = document.getElementById(uuid);
     let activeAccount = document.querySelector('.active-account');
 
@@ -129,10 +125,6 @@ function accountSelect(uuid) {
         document.getElementById("ads").style.display = "none";
         // document.getElementById("ads-text").style.display = "none";
         console.log('Es premium');
-        document.getElementById("header-text-to-add").innerHTML = "Premium Edition";
-        document.getElementById("header-frame").style.background = `linear-gradient(45deg, #C9A635, #B8860B, #A1752D, #8B6914, #70590E)`;
-
-
         let WelcomePremiumShown = localStorage.getItem('WelcomePremiumShown');
         if (!WelcomePremiumShown || WelcomePremiumShown === 'false' || WelcomePremiumShown === null || WelcomePremiumShown === undefined) {
             const modal = document.createElement('div');
@@ -240,25 +232,17 @@ function accountSelect(uuid) {
 
             document.body.appendChild(modal);
         }
-    } else {
-        document.getElementById("header-text-to-add").innerHTML = "Free Edition";
-        document.getElementById("header-frame").style.background = `#212121`;
     }
     //headplayer(pseudo);
 }
 
-async function headplayer(id, pseudo, isOffline) {
-    if (!isOffline) {
-        try {
-            await axios.get(`https://api.battlylauncher.com/api/skin/${pseudo}.png`)
-            const element = document.querySelector(`[id="${id}"] .account-image`);
-            element.style.backgroundImage = `url(https://api.battlylauncher.com/api/skin/${pseudo}.png)`
-        } catch (error) {
-            const element = document.querySelector(`[id="${id}"] .account-image`);
-            element.style.backgroundImage = `url(https://minotar.net/skin/MHF_Steve.png)`
-        }
-    } else {
+async function headplayer(id, pseudo) {
+    try {
+        await axios.get(`https://api.battlylauncher.com/api/skin/${pseudo}.png`)
         const element = document.querySelector(`[id="${id}"] .account-image`);
-        element.style.backgroundImage = `url(https://minotar.net/skin/${pseudo}.png)`
+        element.style.backgroundImage = `url(https://api.battlylauncher.com/api/skin/${pseudo}.png)`
+    } catch (error) {
+        const element = document.querySelector(`[id="${id}"] .account-image`);
+        element.style.backgroundImage = `url(https://minotar.net/skin/MHF_Steve.png)`
     }
 }

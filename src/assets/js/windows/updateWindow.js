@@ -10,7 +10,6 @@ const path = require("path");
 const os = require("os");
 let updateWindow = undefined;
 let updatePanelWindow = undefined;
-let dev = process.env.NODE_ENV === "dev";
 
 function getWindow() {
     return updateWindow;
@@ -47,9 +46,7 @@ async function createWindow() {
     updateWindow.loadFile(path.join(electron.app.getAppPath(), 'src', 'index.html'));
     updateWindow.once('ready-to-show', () => {
         if (updateWindow) {
-            if (dev) {
-                updateWindow.openDevTools();
-            }
+            //updateWindow.openDevTools();
         }
     });
 

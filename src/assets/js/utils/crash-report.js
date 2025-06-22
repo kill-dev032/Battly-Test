@@ -7,20 +7,12 @@ const { ipcRenderer } = require("electron");
 const fs = require("fs");
 const path = require("path");
 const { shell } = require("electron");
-const { Lang } = require("./assets/js/utils/lang.js");
-let lang;
-new Lang().GetLang().then(lang_ => {
-    lang = lang_;
-}).catch(error => {
-    console.error("Error:", error);
-});
+import { Lang } from "./lang.js";
 
-let showed;
+let lang;
 
 class CrashReport {
     async ShowCrashReport(error) {
-        if (showed) return;
-        showed = true;
         lang = await new Lang().GetLang();
         let audioError = new Audio("./assets/audios/error.mp3");
         audioError.play();
@@ -113,7 +105,6 @@ class CrashReport {
         closeButton.textContent = lang["close"];
         closeButton.addEventListener("click", () => {
             modalDiv.remove();
-            showed = false;
         });
 
         const checkSolution = document.createElement("button");
@@ -242,7 +233,7 @@ class CrashReport {
                                 errorTitle.style.fontSize = "27px";
                                 errorTitle.style.fontWeight = "700";
                                 errorTitle.innerText = solution.name;
-
+                    
                                 const errorParagraph = document.createElement("p");
                                 errorParagraph.style.color = "#fff";
                                 errorParagraph.style.fontSize = "16px";
@@ -271,7 +262,7 @@ class CrashReport {
                         }
                     }
                 });
-
+        
 
             setTimeout(() => {
                 if (!solucionEncontrada) {
@@ -288,7 +279,7 @@ class CrashReport {
             setTimeout(() => {
                 if (!solucionEncontrada) {
                     paragraph.innerHTML += `<br><br><span style='font-size: 16px;'>${lang["searching_solution_taking_3"]}</span>`;
-
+                    
                     const closeButton = document.createElement("button");
                     closeButton.className = "button is-danger";
                     closeButton.textContent = lang["close"];
@@ -300,7 +291,7 @@ class CrashReport {
                     modalCardBody.appendChild(closeButton);
                 }
             }, 30000);
-
+          
         });
         checkSolution.innerHTML = '<span><i class="fa-solid fa-wand-magic-sparkles"></i> ' + lang["find_solution"] + '</span>';
 
