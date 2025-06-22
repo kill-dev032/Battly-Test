@@ -1,0 +1,62 @@
+{
+  "name": "battly-studios",
+  "productname": "Battly Launcher",
+  "version": "1.0.0",
+  "buildVersion": "1003",
+  "description": "",
+  "main": "src/app.js",
+  "author": "kill032",
+  "url": "https://api.battlylauncher.com/battlylauncher",
+  "engines": {
+    "node": "^18.x.x"
+  },
+  "scripts": {
+    "start:dev": "cross-env-shell NODE_ENV=dev electron .",
+    "start": "cross-env-shell NODE_ENV=dev electron .",
+    "build": "node build.js",
+    "dev": "nodemon --exec npm start",
+    "git": "electron-builder build --linux",
+    "publish": "electron-builder --win -p always",
+    "build-mac": "electron-builder build --mac",
+    "build-clean": "rm -rf dist"
+  },
+  "license": "ISC",
+  "nodemonConfig": {
+    "ext": "js,html,css"
+  },
+  "dependencies": {
+    "@distube/ytdl-core": "^4.14.4",
+    "7zip-bin": "^5.2.0",
+    "adm-zip": "^0.5.14",
+    "axios": "^1.7.2",
+    "electron-updater": "^6.2.1",
+    "fs-extra": "^11.2.0",
+    "got": "^11.8.6",
+    "javascript-obfuscator": "^4.1.1",
+    "marked": "^13.0.2",
+    "minecraft-launcher-core": "^3.18.1",
+    "minecraft-server-util": "^5.4.4",
+    "nbtify": "^1.90.1",
+    "node-7z": "^3.0.0",
+    "node-fetch": "^2.7.0",
+    "node-notifier": "^10.0.1",
+    "progress-stream": "^2.0.0",
+    "protobufjs": "^7.3.2",
+    "socket.io-client": "^4.7.5",
+    "toml": "^3.0.0",
+    "tough-cookie": "^4.1.4",
+    "unzipper": "^0.12.2",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "electron": "^22.3.27",
+    "electron-builder": "^24.13.3",
+    "nodemon": "^3.1.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kill-dev032/Battly-Test.git"
+  },
+  "private": true
+}
