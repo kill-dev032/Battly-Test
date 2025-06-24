@@ -1,8 +1,3 @@
-/**
- * @author TECNO BROS
- 
- */
-
 const {
   app,
   ipcMain,
@@ -51,32 +46,32 @@ app.whenReady().then(() => {
     },
     { type: "separator" },
     {
-      label: "Abrir carpeta de Battly",
+      label: "Apri la cartella Battly",
       type: "normal",
       click: () => {
         AbrirCarpeta();
       },
     },
     {
-      label: "Battly Music",
+      label: "Musica Battly",
       type: "submenu",
       submenu: [
         {
-          label: "Reproducir/Pausar",
+          label: "Riproduci/Pausa",
           type: "normal",
           click: () => {
             PlayPause();
           },
         },
         {
-          label: "Siguiente",
+          label: "Seguente",
           type: "normal",
           click: () => {
             NextMusic();
           },
         },
         {
-          label: "Anterior",
+          label: "Ex",
           type: "normal",
           click: () => {
             PrevMusic();
@@ -89,19 +84,19 @@ app.whenReady().then(() => {
       label: "Discord",
       type: "normal",
       click: () => {
-        shell.openExternal("https://discord.gg/tecno-bros-885235460178342009");
+        shell.openExternal("https://discord.nexuxnova.it");
       },
     },
     {
-      label: "Sitio web",
+      label: "Sito Web",
       type: "normal",
       click: () => {
-        shell.openExternal("https://battlylauncher.com");
+        shell.openExternal("https://nexuxnova.it");
       },
     },
     { type: "separator" },
     {
-      label: "Cerrar Battly",
+      label: "Chiudi Battly",
       type: "normal",
       click: () => {
         app.quit();
@@ -114,7 +109,7 @@ app.whenReady().then(() => {
 
 // Función para actualizar el menú de la bandeja dependiendo del estado de reproducción
 function updateTrayMenu() {
-  const playPauseLabel = isPlaying ? "Pausar" : "Reproducir";
+  const playPauseLabel = isPlaying ? "Pausa" : "Riprodurre";
   const contextMenu = Menu.buildFromTemplate([
     {
       label: "Battly Launcher",
@@ -123,14 +118,14 @@ function updateTrayMenu() {
     },
     { type: "separator" },
     {
-      label: "Abrir carpeta de Battly",
+      label: "Apri la cartella Battly",
       type: "normal",
       click: () => {
         AbrirCarpeta();
       },
     },
     {
-      label: "Battly Music",
+      label: "Musica Battly",
       type: "submenu",
       submenu: [
         {
@@ -141,14 +136,14 @@ function updateTrayMenu() {
           },
         },
         {
-          label: "Siguiente",
+          label: "Seguente",
           type: "normal",
           click: () => {
             NextMusic();
           },
         },
         {
-          label: "Anterior",
+          label: "Ex",
           type: "normal",
           click: () => {
             PrevMusic();
@@ -161,19 +156,19 @@ function updateTrayMenu() {
       label: "Discord",
       type: "normal",
       click: () => {
-        shell.openExternal("https://discord.gg/tecno-bros-885235460178342009");
+        shell.openExternal("https://discord.nexuxnova.it");
       },
     },
     {
-      label: "Sitio web",
+      label: "Sito Web",
       type: "normal",
       click: () => {
-        shell.openExternal("https://battlylauncher.com");
+        shell.openExternal("https://nexuxnova.it");
       },
     },
     { type: "separator" },
     {
-      label: "Cerrar Battly",
+      label: "Chiudi Battly",
       type: "normal",
       click: () => {
         app.quit();
@@ -222,7 +217,7 @@ if (!fs.existsSync(path.join(dataDirectory, ".battly")))
   fs.mkdirSync(path.join(dataDirectory, ".battly"));
 
 socket.on("connect", () => {
-  console.log("Conectado al servidor");
+  console.log("Connesso al server");
 });
 
 socket.on("notificacion", async (data) => {
@@ -235,12 +230,12 @@ socket.on("notificacion", async (data) => {
       icon: path.join(__dirname, "/assets/images/icon.png"),
       sound: true,
       wait: true,
-      actions: ["Abrir"],
+      actions: ["Apri"],
       appID: "Battly Launcher",
     },
     function (err, response, metadata) {
       if (metadata.activationType === "Abrir") {
-        console.log("Abriendo URL:", url);
+        console.log("URL di apertura:", url);
         shell.openExternal(url);
       }
     }
@@ -257,12 +252,12 @@ socket.on("solicitudAmistad", async (data) => {
   try {
     notifier.notify(
       {
-        title: "Solicitud de amistad",
-        message: `${username} te ha enviado una solicitud de amistad.`,
+        title: "Richiesta di amicizia",
+        message: `${username} ti ha inviato una richiesta di amicizia.`,
         icon: path.join(__dirname, "/assets/images/icon.png"),
         sound: true,
         wait: true,
-        actions: ["Aceptar", "Rechazar"],
+        actions: ["Accetta", "Declino"],
         appID: "Battly Launcher",
       },
       (event, arg, metadata) => {
@@ -282,7 +277,7 @@ socket.on("solicitudAmistad", async (data) => {
       }
     );
   } catch (error) {
-    console.error("Error al mostrar la notificación:", error);
+    console.error("Errore nella visualizzazione della notifica:", error);
   }
 });
 
@@ -474,13 +469,13 @@ const rpc = require("./assets/js/libs/discord/index");
 let client = new rpc.Client({ transport: "ipc" });
 
 ipcMain.on("new-status-discord", async () => {
-  client.login({ clientId: "917866962523152404" });
+  client.login({ clientId: "1385601392122527825" });
   client.on("ready", () => {
     client
       .request("SET_ACTIVITY", {
         pid: process.pid,
         activity: {
-          details: "En el menú de inicio",
+          details: "Nel menu di avvio",
           assets: {
             large_image: "battly_512",
             large_text: "Battly Launcher",
@@ -488,9 +483,9 @@ ipcMain.on("new-status-discord", async () => {
           buttons: [
             {
               label: "👥 Discord",
-              url: "https://discord.gg/tecno-bros-885235460178342009",
+              url: "https://discord.nexuxnova.it",
             },
-            { label: "⏬ Descargar", url: "https://battlylauncher.com" },
+            { label: "⏬ Scarico", url: "https://nexuxnova.it" },
           ],
           instance: false,
           timestamps: {
@@ -515,7 +510,7 @@ ipcMain.on("new-status-discord-jugando", async (event, status) => {
 
   if (client) await client.destroy();
   client = new rpc.Client({ transport: "ipc" });
-  client.login({ clientId: "917866962523152404" });
+  client.login({ clientId: "1385601392122527825" });
   client.on("ready", () => {
     client
       .request("SET_ACTIVITY", {
@@ -531,9 +526,9 @@ ipcMain.on("new-status-discord-jugando", async (event, status) => {
           buttons: [
             {
               label: "👥 Discord",
-              url: "https://discord.gg/tecno-bros-885235460178342009",
+              url: "https://discord.nexuxnova.it",
             },
-            { label: "⏬ Descargar", url: "https://battlylauncher.com" },
+            { label: "⏬ Scarico", url: "https://nexuxnova.it" },
           ],
           instance: false,
           timestamps: {
@@ -556,13 +551,13 @@ ipcMain.on("new-notification", async (event, info) => {
 ipcMain.on("delete-and-new-status-discord", async () => {
   if (client) client.destroy();
   client = new rpc.Client({ transport: "ipc" });
-  client.login({ clientId: "917866962523152404" });
+  client.login({ clientId: "1385601392122527825" });
   client.on("ready", () => {
     client
       .request("SET_ACTIVITY", {
         pid: process.pid,
         activity: {
-          details: "En el menú de inicio",
+          details: "Nel menu di avvio",
           assets: {
             large_image: "battly_512",
             large_text: "Battly Launcher",
@@ -570,9 +565,9 @@ ipcMain.on("delete-and-new-status-discord", async () => {
           buttons: [
             {
               label: "👥 Discord",
-              url: "https://discord.gg/tecno-bros-885235460178342009",
+              url: "https://discord.nexuxnova.it",
             },
-            { label: "⏬ Descargar", url: "https://battlylauncher.com" },
+            { label: "⏬ Scarico", url: "https://nexuxnova.it" },
           ],
           instance: false,
           timestamps: {

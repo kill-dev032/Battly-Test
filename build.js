@@ -10,9 +10,9 @@ async function obfuscateFile(filePath) {
         const code = await fs.readFile(filePath, 'utf-8');
         const obfuscatedCode = obfuscator.obfuscate(code, { /* opciones de obfuscator */ }).getObfuscatedCode();
         await fs.writeFile(filePath, obfuscatedCode);
-        console.log(`✅ Código obfuscado correctamente: ${filePath}`);
+        console.log(`✅ Codice oscurato correttamente: ${filePath}`);
     } catch (error) {
-        console.error(`Error al obfuscar el archivo ${filePath}`, error);
+        console.error(`Errore nell'offuscamento del file ${filePath}`, error);
     }
 }
 
@@ -28,7 +28,7 @@ async function obfuscateSrc() {
         // Obfuscar cada archivo .js
         await Promise.all(jsFiles.map(file => obfuscateFile(path.join(srcPath, file))));
     } catch (error) {
-        console.error('Error al obfuscar el código', error);
+        console.error('Errore nell\'offuscare il codice', error);
     }
 }
 // Ejecutar la obfuscación antes de construir
@@ -75,8 +75,8 @@ obfuscateSrc().then(() => {
             }
         }
     }).then(() => {
-        console.log('✅ El build se ha realizado correctamente.')
+        console.log('✅ La costruzione è stata realizzata correttamente.')
     }).catch(err => {
-        console.error('Error al realizar el build', err)
+        console.error('Errore durante l\'esecuzione della build', err)
     })
 });
